@@ -98,6 +98,7 @@
     var State = { SPLASH: 0, BUBBLES: 1, ANSWER: 2 };
     var appState = State.SPLASH;
     var lastInteraction = Date.now();
+    var animTime = 0; // module-scoped animation time for hit detection
 
     // =========================================================================
     // God rays
@@ -106,7 +107,7 @@
     var godRays = [];
     for (var i = 0; i < GOD_RAY_COUNT; i++) {
         godRays.push({
-            x: W * (0.1 + i * 0.25 + Math.random() * 0.1),
+            xFrac: 0.1 + i * 0.25 + Math.random() * 0.1, // fractional position
             width: 60 + Math.random() * 80,
             opacity: 0.03 + Math.random() * 0.025,
             swayOffset: Math.random() * Math.PI * 2,
@@ -118,9 +119,10 @@
     function drawGodRays(time) {
         for (var i = 0; i < godRays.length; i++) {
             var ray = godRays[i];
+            var rayX = ray.xFrac * W;
             var sway = Math.sin(time * ray.swaySpeed + ray.swayOffset) * ray.swayAmp;
-            var topX = ray.x + sway;
-            var botX = ray.x + sway * 0.5 + ray.width * 0.8;
+            var topX = rayX + sway;
+            var botX = rayX + sway * 0.5 + ray.width * 0.8;
             var hw = ray.width / 2;
 
             ctx.globalAlpha = ray.opacity;
@@ -330,6 +332,8 @@
 
     var questionCooldowns = {};
     var currentQuestionIds = [];
+    var pendingRespawnIds = []; // IDs waiting to respawn when back in BUBBLES state
+    var respawnTimerIds = []; // active setTimeout handles for cancellation
 
     function initQuestionBubbles() {
         questionBubbles = [];
@@ -370,7 +374,17 @@
         };
     }
 
-    function respawnQuestionBubble(idx) {
+    function respawnQuestionBubbleById(slotId) {
+        // Find the slot by its original questionId
+        var idx = -1;
+        for (var i = 0; i < questionBubbles.length; i++) {
+            if (questionBubbles[i].questionId === slotId && !questionBubbles[i].active) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx === -1) return; // slot already active or not found (array was reset)
+
         var available = getAvailableQuestions();
         if (available.length === 0) return;
         var q = available[Math.floor(Math.random() * available.length)];
@@ -385,6 +399,15 @@
         qb.speed = 0.5 + Math.random() * 0.3;
         qb.wobbleOffset = Math.random() * Math.PI * 2;
         qb.glowPhase = Math.random() * Math.PI * 2;
+    }
+
+    function drainPendingRespawns() {
+        if (pendingRespawnIds.length === 0) return;
+        var ids = pendingRespawnIds.slice();
+        pendingRespawnIds = [];
+        for (var i = 0; i < ids.length; i++) {
+            respawnQuestionBubbleById(ids[i]);
+        }
     }
 
     // =========================================================================
@@ -465,12 +488,16 @@
             if (this.ctx) return;
             var AC = window.AudioContext || window.webkitAudioContext;
             if (!AC) return;
-            this.ctx = new AC();
-            if (this.ctx.state === 'suspended') this.ctx.resume();
-            var bufferSize = Math.floor(this.ctx.sampleRate * 0.08);
-            this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-            var data = this.noiseBuffer.getChannelData(0);
-            for (var i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+            try {
+                this.ctx = new AC();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                var bufferSize = Math.floor(this.ctx.sampleRate * 0.08);
+                this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                var data = this.noiseBuffer.getChannelData(0);
+                for (var i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+            } catch (e) {
+                this.ctx = null;
+            }
         },
 
         playPop: function (mini) {
@@ -664,12 +691,21 @@
         overlayEl.classList.add('hidden');
         appState = State.BUBBLES;
         lastInteraction = Date.now();
+        drainPendingRespawns();
     }
 
     dismissBtn.addEventListener('pointerdown', function (e) {
         e.stopPropagation();
         e.preventDefault();
         hideAnswer();
+    });
+
+    // Tap overlay background (outside content) to dismiss
+    overlayEl.addEventListener('pointerdown', function (e) {
+        if (e.target === overlayEl && appState === State.ANSWER) {
+            e.preventDefault();
+            hideAnswer();
+        }
     });
 
     var escapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -688,6 +724,12 @@
         splashEl.classList.remove('hidden');
         overlayEl.classList.add('hidden');
         questionCooldowns = {};
+        pendingRespawnIds = [];
+        // Cancel any in-flight respawn timers
+        for (var i = 0; i < respawnTimerIds.length; i++) {
+            clearTimeout(respawnTimerIds[i]);
+        }
+        respawnTimerIds = [];
     }
 
     function hideSplash() {
@@ -729,13 +771,23 @@
                 spawnBurst(qb.x, qb.y, false);
                 startleFish(qb.x, qb.y);
                 questionCooldowns[qb.questionId] = Date.now() + QUESTION_COOLDOWN_MS;
+                var poppedId = qb.questionId;
                 qb.active = false;
-                showAnswer(qb.questionId);
-                (function (idx) {
-                    setTimeout(function () {
-                        if (appState === State.BUBBLES) respawnQuestionBubble(idx);
+                showAnswer(poppedId);
+                (function (id) {
+                    var tid = setTimeout(function () {
+                        // Remove from active timers
+                        var tidx = respawnTimerIds.indexOf(tid);
+                        if (tidx !== -1) respawnTimerIds.splice(tidx, 1);
+                        if (appState === State.BUBBLES) {
+                            respawnQuestionBubbleById(id);
+                        } else if (appState === State.ANSWER) {
+                            pendingRespawnIds.push(id);
+                        }
+                        // If SPLASH, do nothing — session was reset
                     }, 2000);
-                })(i);
+                    respawnTimerIds.push(tid);
+                })(poppedId);
                 return;
             }
         }
@@ -743,7 +795,7 @@
         // Check decorative bubbles (pop for delight!)
         for (var i = decorativeBubbles.length - 1; i >= 0; i--) {
             var b = decorativeBubbles[i];
-            var bx = b.x + Math.sin(Date.now() / 1000 * b.wobbleFreq + b.wobbleOffset) * b.wobbleAmp;
+            var bx = b.x + Math.sin(animTime * b.wobbleFreq + b.wobbleOffset) * b.wobbleAmp;
             var dx = px - bx;
             var dy = py - b.y;
             var dist = Math.sqrt(dx * dx + dy * dy);
@@ -852,7 +904,7 @@
         ctx.fill();
         ctx.globalAlpha = 1;
 
-        var fontSize = Math.max(12, Math.min(r * 0.28, 19));
+        var fontSize = Math.max(12, Math.min(r * 0.3, 22));
         var maxTextWidth = r * 1.4;
         var lines = wrapText(qb.bubbleText, maxTextWidth, fontSize);
         ctx.font = 'bold ' + fontSize + 'px sans-serif';
@@ -963,6 +1015,7 @@
         var dt = Math.min(rawDt, 3);
         lastTime = timestamp;
         var time = timestamp / 1000;
+        animTime = time;
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.drawImage(bgCanvas, 0, 0, W * dpr, H * dpr, 0, 0, W, H);
