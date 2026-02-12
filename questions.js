@@ -25,48 +25,55 @@ window.QUESTIONS = [
             label: 'A collapsing bubble can reach...',
             number: '4,700',
             unit: '\u{00B0}C',
-            comparison: 'That\u{2019}s nearly as hot as the surface of the Sun (5,500\u{00B0}C)! The bubble collapses so fast that the trapped gas is squeezed and heated to extreme temperatures in a fraction of a millisecond.'
+            badges: [
+                { icon: '\u{1F9D1}', value: '37\u{00B0}C', label: 'Body' },
+                { icon: '\u{1F373}', value: '250\u{00B0}C', label: 'Oven' },
+                { icon: '\u{1F30B}', value: '1,200\u{00B0}C', label: 'Lava' },
+                { icon: '\u{1FAE7}', value: '4,700\u{00B0}C', label: 'Bubble!', highlight: true },
+                { icon: '\u{2600}\u{FE0F}', value: '5,500\u{00B0}C', label: 'Sun' },
+            ],
+            comparison: ''
         }
     },
     {
         id: 'destruction',
         bubbleText: 'Can bubbles destroy metal?',
-        answerType: 'text-fact',
+        answerType: 'icon-grid',
         answer: {
             title: 'Tiny Bubbles, Big Damage',
-            facts: [
-                { icon: '\u{1F6A2}', text: 'Ship propellers get eaten away by millions of tiny bubble collapses. This is called cavitation erosion.' },
-                { icon: '\u{26A0}\u{FE0F}', text: 'Each collapsing bubble fires a tiny jet of water at the metal surface at over 100 m/s.' },
-                { icon: '\u{1F4B0}', text: 'Cavitation damage costs billions of pounds every year to repair in ships, pumps, and turbines.' },
-                { icon: '\u{1F52C}', text: 'In our demo, you can see how the shock wave from a collapsing bubble bursts a balloon. Imagine millions of those hitting a propeller!' }
+            items: [
+                { icon: '\u{1F6A2}', label: 'Eats through ship propellers' },
+                { icon: '\u{1F4A8}', label: 'Micro-jets at 100 m/s' },
+                { icon: '\u{1F4B0}', label: 'Billions in repairs every year' },
+                { icon: '\u{1F388}', label: 'Like our balloon demo, but millions of times!' },
             ]
         }
     },
     {
         id: 'useful',
         bubbleText: 'Can cavitation be useful?',
-        answerType: 'text-fact',
+        answerType: 'icon-grid',
         answer: {
             title: 'Cavitation for Good!',
-            facts: [
-                { icon: '\u{1F9B7}', text: 'Your dentist uses ultrasonic cavitation to clean your teeth. Tiny bubbles collapse and blast away plaque.' },
-                { icon: '\u{1F48A}', text: 'Scientists use cavitation to mix medicines and break apart cells for research.' },
-                { icon: '\u{1F52C}', text: 'Cavitation is used to purify water by destroying bacteria with shock waves.' },
-                { icon: '\u{1F680}', text: 'Engineers study cavitation to design better, quieter, and more efficient propellers and pumps.' }
+            items: [
+                { icon: '\u{1F9B7}', label: 'Cleans your teeth' },
+                { icon: '\u{1F48A}', label: 'Mixes medicines' },
+                { icon: '\u{1F4A7}', label: 'Purifies water' },
+                { icon: '\u{2699}\u{FE0F}', label: 'Better propellers' },
             ]
         }
     },
     {
         id: 'where',
         bubbleText: 'Where does cavitation happen?',
-        answerType: 'text-fact',
+        answerType: 'icon-grid',
         answer: {
             title: 'Cavitation Is Everywhere!',
-            facts: [
-                { icon: '\u{1F6A2}', text: 'On every ship propeller spinning in the ocean. Fast-moving blades create low-pressure zones where bubbles form and collapse.' },
-                { icon: '\u{1F990}', text: 'The pistol shrimp snaps its claw so fast it creates a cavitation bubble. The collapsing bubble stuns its prey!' },
-                { icon: '\u{1F6B0}', text: 'Inside pumps and pipes wherever water flows fast and pressure drops quickly.' },
-                { icon: '\u{1F3E0}', text: 'Even in your kitchen! A blender creates cavitation bubbles to mix your smoothie.' }
+            items: [
+                { icon: '\u{1F6A2}', label: 'Ship propellers' },
+                { icon: '\u{1F990}', label: 'Pistol shrimp claws' },
+                { icon: '\u{1F6B0}', label: 'Pumps and pipes' },
+                { icon: '\u{1F3E0}', label: 'Your kitchen blender!' },
             ]
         }
     },
@@ -78,7 +85,12 @@ window.QUESTIONS = [
             label: 'The secret weapon belongs to the...',
             number: 'Pistol Shrimp',
             unit: '',
-            comparison: 'This tiny shrimp (only 5 cm long) snaps its claw shut so fast that it creates a cavitation bubble. When the bubble collapses, it produces a shock wave, a flash of light, and temperatures of over 4,700\u{00B0}C! The snap is one of the loudest sounds in the ocean.'
+            badges: [
+                { icon: '\u{1F4CF}', value: '5 cm', label: 'long' },
+                { icon: '\u{1F525}', value: '4,700\u{00B0}C', label: 'hot' },
+                { icon: '\u{1F50A}', value: '218 dB', label: 'loud' },
+            ],
+            comparison: 'Snaps its claw so fast it creates a cavitation bubble, a shock wave, and a flash of light!'
         }
     }
 ];
