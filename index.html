@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bubble Quiz">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#091f36">
+    <title>When Bubbles Bite — Bubble Quiz</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <canvas id="bubble-canvas"></canvas>
+
+    <div id="answer-overlay" class="hidden">
+        <div id="answer-content"></div>
+        <button id="dismiss-btn">Tap to continue</button>
+    </div>
+
+    <div id="splash-screen">
+        <div id="splash-content">
+            <h1 id="splash-title">When Bubbles Bite</h1>
+            <p id="splash-subtitle">The Hidden Power of Cavitation</p>
+            <p id="splash-cta">Tap to explore!</p>
+            <p id="splash-branding">Edinburgh Science Festival 2026 &bull; Dynamic Earth</p>
+        </div>
+    </div>
+
+    <button id="mute-btn" aria-label="Toggle sound">
+        <span id="mute-icon">&#x1F50A;</span>
+    </button>
+
+    <script src="questions.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
