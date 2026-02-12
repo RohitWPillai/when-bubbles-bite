@@ -14,7 +14,7 @@ window.QUESTIONS = [
                 { label: 'Fighter Jet', value: 2200,  display: '2,200 km/h', icon: '\u{2708}\u{FE0F}', color: '#e9c46a' },
                 { label: 'Bubble',      value: 5000,  display: '5,000 km/h', icon: '\u{1FAE7}', color: '#e63946' },
             ],
-            funFact: 'A collapsing cavitation bubble moves close to the speed of sound in water (5,400 km/h)!'
+            funFact: 'A collapsing cavitation bubble approaches the speed of sound in water (5,400 km/h)!'
         }
     },
     {
@@ -32,7 +32,7 @@ window.QUESTIONS = [
                 { icon: '\u{1FAE7}', value: '4,700\u{00B0}C', label: 'Bubble!', highlight: true },
                 { icon: '\u{2600}\u{FE0F}', value: '5,500\u{00B0}C', label: 'Sun' },
             ],
-            comparison: ''
+            comparison: 'The balloon in our demo collapses the same way, but real cavitation bubbles get almost as hot as the Sun!'
         }
     },
     {
@@ -45,7 +45,7 @@ window.QUESTIONS = [
                 { icon: '\u{1F6A2}', label: 'Eats through ship propellers' },
                 { icon: '\u{1F4A8}', label: 'Micro-jets at 100 m/s' },
                 { icon: '\u{1F4B0}', label: 'Billions in repairs every year' },
-                { icon: '\u{1F388}', label: 'Like our balloon demo, but millions of times!' },
+                { icon: '\u{1F388}', label: 'Same physics as our balloon demo, but tiny and by the millions!' },
             ]
         }
     },

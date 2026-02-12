@@ -107,6 +107,8 @@ html, body {
     background: rgba(9, 31, 54, 0.88);
     transition: opacity 0.4s ease;
     padding: 2rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 #answer-overlay.hidden {
