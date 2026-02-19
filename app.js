@@ -1037,18 +1037,31 @@
     var streakGlowAlpha = 0; // background glow pulse
 
     function applyStreakEffects(cx, cy) {
-        // Streak 2+: larger burst (handled by modifying burst count)
+        // Streak 2+: double burst + shockwave
         if (streak >= 2) {
-            spawnBurst(cx, cy, false); // double burst
+            spawnBurst(cx, cy, false);
+            spawnShockwave(cx, cy);
         }
-        // Streak 3+: background glow pulse
+        // Streak 3+: background glow + sonoluminescence flash + screen shake
         if (streak >= 3) {
             streakGlowAlpha = 0.15;
+            spawnSonoFlash(cx, cy);
+            triggerScreenShake(8);
         }
-        // Streak 4+: bioluminescence bloom + extra burst
+        // Streak 4+: bioluminescence bloom + extra burst + bigger shake
         if (streak >= 4) {
             spawnBioluminescence(cx, cy);
             spawnBurst(cx, cy, true);
+            triggerScreenShake(14);
+        }
+        // Streak 5+: whale passage trigger
+        if (streak >= 5) {
+            whale.questionsAnswered = streak;
+            triggerWhale();
+        }
+        // Streak 6 (all questions): trigger cascade finale
+        if (streak >= 6) {
+            triggerCascade(cx, cy);
         }
     }
 
@@ -1065,6 +1078,494 @@
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, W, H);
         ctx.restore();
+    }
+
+    // =========================================================================
+    // Finger-trail bioluminescence
+    // =========================================================================
+
+    var fingerTrail = []; // {x, y, time} — last ~100 touch positions
+    var TRAIL_MAX = 100;
+    var TRAIL_LIFETIME = 2.5; // seconds before trail fades
+
+    var trailParticles = [];
+    var TRAIL_PARTICLE_MAX = 60;
+    for (var i = 0; i < TRAIL_PARTICLE_MAX; i++) {
+        trailParticles.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, size: 0 });
+    }
+
+    function addTrailPoint(x, y) {
+        fingerTrail.push({ x: x, y: y, time: animTime });
+        if (fingerTrail.length > TRAIL_MAX) fingerTrail.shift();
+        // Spawn 1-2 tiny particles at the touch point
+        for (var n = 0; n < 2; n++) {
+            for (var i = 0; i < trailParticles.length; i++) {
+                if (trailParticles[i].active) continue;
+                var p = trailParticles[i];
+                p.active = true;
+                p.x = x + (Math.random() - 0.5) * 6;
+                p.y = y + (Math.random() - 0.5) * 6;
+                var angle = Math.random() * Math.PI * 2;
+                var speed = 0.5 + Math.random() * 1.5;
+                p.vx = Math.cos(angle) * speed;
+                p.vy = Math.sin(angle) * speed;
+                p.life = 0;
+                p.maxLife = 30 + Math.random() * 30;
+                p.size = 1.5 + Math.random() * 2.5;
+                break;
+            }
+        }
+    }
+
+    function updateTrailParticles(dt) {
+        var drag = Math.pow(0.95, dt);
+        for (var i = 0; i < trailParticles.length; i++) {
+            var p = trailParticles[i];
+            if (!p.active) continue;
+            p.life += dt;
+            if (p.life >= p.maxLife) { p.active = false; continue; }
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vx *= drag;
+            p.vy *= drag;
+        }
+    }
+
+    function drawFingerTrail(time) {
+        if (fingerTrail.length < 2) return;
+        var prevComp = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = 'lighter';
+
+        // Draw trail as connected glowing circles
+        for (var i = 0; i < fingerTrail.length; i++) {
+            var pt = fingerTrail[i];
+            var age = time - pt.time;
+            if (age > TRAIL_LIFETIME) continue;
+            var alpha = (1 - age / TRAIL_LIFETIME) * 0.35;
+            var radius = 8 + (1 - age / TRAIL_LIFETIME) * 6;
+
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(100, 255, 218, 1)';
+            ctx.fill();
+
+            // Outer glow
+            ctx.globalAlpha = alpha * 0.3;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, radius * 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(29, 233, 182, 1)';
+            ctx.fill();
+        }
+
+        // Draw trail particles
+        for (var i = 0; i < trailParticles.length; i++) {
+            var p = trailParticles[i];
+            if (!p.active) continue;
+            var progress = p.life / p.maxLife;
+            var a = (1 - progress) * 0.5;
+            ctx.globalAlpha = a;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * (1 - progress * 0.4), 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(180, 248, 255, 1)';
+            ctx.fill();
+        }
+
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = prevComp;
+
+        // Prune expired trail points
+        while (fingerTrail.length > 0 && time - fingerTrail[0].time > TRAIL_LIFETIME) {
+            fingerTrail.shift();
+        }
+    }
+
+    // =========================================================================
+    // Shockwave system
+    // =========================================================================
+
+    var shockwaves = []; // {x, y, radius, maxRadius, life}
+
+    function spawnShockwave(cx, cy) {
+        shockwaves.push({
+            x: cx,
+            y: cy,
+            radius: 0,
+            maxRadius: Math.max(W, H) * 0.5,
+            life: 0,
+            maxLife: 0.6, // seconds
+        });
+    }
+
+    function updateShockwaves(dt) {
+        var dtSec = dt / 60; // convert dt-units to approx seconds
+        for (var i = shockwaves.length - 1; i >= 0; i--) {
+            var sw = shockwaves[i];
+            sw.life += dtSec;
+            if (sw.life >= sw.maxLife) {
+                shockwaves.splice(i, 1);
+                continue;
+            }
+            var progress = sw.life / sw.maxLife;
+            sw.radius = progress * sw.maxRadius;
+        }
+    }
+
+    function drawShockwaves() {
+        if (shockwaves.length === 0) return;
+        var prevComp = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = 'lighter';
+        for (var i = 0; i < shockwaves.length; i++) {
+            var sw = shockwaves[i];
+            var progress = sw.life / sw.maxLife;
+            var alpha = (1 - progress) * 0.25;
+            var ringWidth = 20 + progress * 30;
+
+            // Main ring
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(200, 235, 255, 1)';
+            ctx.lineWidth = ringWidth * (1 - progress);
+            ctx.stroke();
+
+            // Chromatic aberration — offset RGB rings
+            ctx.globalAlpha = alpha * 0.4;
+            ctx.beginPath();
+            ctx.arc(sw.x, sw.y, sw.radius * 0.97, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 100, 100, 1)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(sw.x, sw.y, sw.radius * 1.03, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(100, 100, 255, 1)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = prevComp;
+    }
+
+    // Apply shockwave displacement to an object at (ox, oy)
+    function getShockwaveDisplacement(ox, oy) {
+        var dx = 0, dy = 0;
+        for (var i = 0; i < shockwaves.length; i++) {
+            var sw = shockwaves[i];
+            var distX = ox - sw.x;
+            var distY = oy - sw.y;
+            var dist = Math.sqrt(distX * distX + distY * distY);
+            if (dist < 1) continue;
+            var ringDist = Math.abs(dist - sw.radius);
+            var influence = 40; // pixels of influence around the ring
+            if (ringDist < influence) {
+                var progress = sw.life / sw.maxLife;
+                var strength = (1 - ringDist / influence) * (1 - progress) * 12;
+                dx += (distX / dist) * strength;
+                dy += (distY / dist) * strength;
+            }
+        }
+        return { x: dx, y: dy };
+    }
+
+    // =========================================================================
+    // Sonoluminescence flash
+    // =========================================================================
+
+    var sonoFlash = { active: false, x: 0, y: 0, life: 0, maxLife: 0.4 };
+
+    function spawnSonoFlash(cx, cy) {
+        sonoFlash.active = true;
+        sonoFlash.x = cx;
+        sonoFlash.y = cy;
+        sonoFlash.life = 0;
+    }
+
+    function updateSonoFlash(dt) {
+        if (!sonoFlash.active) return;
+        sonoFlash.life += dt / 60;
+        if (sonoFlash.life >= sonoFlash.maxLife) sonoFlash.active = false;
+    }
+
+    function drawSonoFlash() {
+        if (!sonoFlash.active) return;
+        var progress = sonoFlash.life / sonoFlash.maxLife;
+        var prevComp = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = 'lighter';
+
+        // Central white flash expanding outward
+        var flashRadius = 30 + progress * Math.max(W, H) * 0.3;
+        var alpha = Math.pow(1 - progress, 3) * 0.6;
+        ctx.globalAlpha = alpha;
+        var grad = ctx.createRadialGradient(sonoFlash.x, sonoFlash.y, 0, sonoFlash.x, sonoFlash.y, flashRadius);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        grad.addColorStop(0.3, 'rgba(200, 240, 255, 0.6)');
+        grad.addColorStop(0.7, 'rgba(127, 219, 218, 0.2)');
+        grad.addColorStop(1, 'rgba(127, 219, 218, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(sonoFlash.x - flashRadius, sonoFlash.y - flashRadius, flashRadius * 2, flashRadius * 2);
+
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = prevComp;
+    }
+
+    // Screen shake state
+    var screenShake = { intensity: 0 };
+
+    function triggerScreenShake(intensity) {
+        screenShake.intensity = intensity;
+    }
+
+    function applyScreenShake(dt) {
+        if (screenShake.intensity < 0.5) { screenShake.intensity = 0; return; }
+        var shakeX = (Math.random() - 0.5) * screenShake.intensity;
+        var shakeY = (Math.random() - 0.5) * screenShake.intensity;
+        ctx.translate(shakeX, shakeY);
+        screenShake.intensity *= Math.pow(0.88, dt);
+    }
+
+    // =========================================================================
+    // Whale silhouette
+    // =========================================================================
+
+    var whale = {
+        active: false,
+        startTime: 0,
+        duration: 10, // seconds to cross
+        y: 0,
+        direction: 1, // 1=right, -1=left
+        triggered: false, // only once per session
+        questionsAnswered: 0,
+    };
+
+    function triggerWhale() {
+        if (whale.triggered) return;
+        whale.triggered = true;
+        whale.active = true;
+        whale.startTime = animTime;
+        whale.y = H * (0.3 + Math.random() * 0.2);
+        whale.direction = Math.random() > 0.5 ? 1 : -1;
+    }
+
+    function drawWhale(time) {
+        if (!whale.active) return;
+        var elapsed = time - whale.startTime;
+        if (elapsed > whale.duration) { whale.active = false; return; }
+
+        var progress = elapsed / whale.duration;
+        // Fade in and out at edges
+        var fadeAlpha = Math.min(progress * 5, 1) * Math.min((1 - progress) * 5, 1);
+        var x = whale.direction > 0
+            ? -300 + progress * (W + 600)
+            : W + 300 - progress * (W + 600);
+        var y = whale.y + Math.sin(time * 0.15) * 15;
+        var scale = 4; // massive
+
+        ctx.save();
+        ctx.globalAlpha = 0.08 * fadeAlpha;
+        ctx.translate(x, y);
+        if (whale.direction < 0) ctx.scale(-1, 1);
+        ctx.scale(scale, scale);
+
+        // Body — elongated ellipse
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 60, 18, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#0a1f30';
+        ctx.fill();
+
+        // Head — slightly bulbous
+        ctx.beginPath();
+        ctx.ellipse(55, 0, 15, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tail flukes
+        var tailAngle = Math.sin(time * 0.8) * 0.15;
+        ctx.save();
+        ctx.translate(-60, 0);
+        ctx.rotate(tailAngle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(-15, -20, -30, -18);
+        ctx.quadraticCurveTo(-15, -5, 0, 0);
+        ctx.quadraticCurveTo(-15, 5, -30, 18);
+        ctx.quadraticCurveTo(-15, 20, 0, 0);
+        ctx.fill();
+        ctx.restore();
+
+        // Pectoral fin
+        ctx.beginPath();
+        ctx.ellipse(15, 15, 18, 5, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+
+        // Whale current — nudge nearby particles
+        for (var i = 0; i < marineSnow.length; i++) {
+            var s = marineSnow[i];
+            var dy = Math.abs(s.y - whale.y);
+            if (dy < 100) {
+                s.x += whale.direction * 0.3 * (1 - dy / 100) * fadeAlpha;
+            }
+        }
+    }
+
+    // =========================================================================
+    // Bubble nursery (long-press to create)
+    // =========================================================================
+
+    var nursery = {
+        active: false,
+        x: 0,
+        y: 0,
+        startTime: 0,
+        radius: 0,
+    };
+    var userBubbles = []; // released user-created bubbles
+
+    function updateUserBubbles(dt) {
+        for (var i = userBubbles.length - 1; i >= 0; i--) {
+            var b = userBubbles[i];
+            b.y -= b.speed * dt;
+            b.x += Math.sin(animTime * b.wobbleFreq + b.wobblePhase) * b.wobbleAmp * dt;
+            if (b.y < -b.radius) {
+                // Pop at top with mini burst
+                spawnBurst(b.x, 0, true);
+                userBubbles.splice(i, 1);
+            }
+        }
+    }
+
+    function drawNurseryBubble(time) {
+        if (!nursery.active) return;
+        var elapsed = time - nursery.startTime;
+        nursery.radius = Math.min(5 + elapsed * 12, 40);
+        var r = nursery.radius;
+
+        // Draw growing bubble
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        var grad = ctx.createRadialGradient(
+            nursery.x - r * 0.3, nursery.y - r * 0.3, r * 0.1,
+            nursery.x, nursery.y, r
+        );
+        grad.addColorStop(0, 'rgba(200, 240, 255, 0.4)');
+        grad.addColorStop(0.7, 'rgba(100, 200, 230, 0.2)');
+        grad.addColorStop(1, 'rgba(60, 150, 200, 0.05)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(nursery.x, nursery.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(200, 230, 255, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawUserBubbles(time) {
+        for (var i = 0; i < userBubbles.length; i++) {
+            var b = userBubbles[i];
+            var r = b.radius;
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            var grad = ctx.createRadialGradient(
+                b.x - r * 0.3, b.y - r * 0.3, r * 0.1,
+                b.x, b.y, r
+            );
+            grad.addColorStop(0, 'rgba(200, 240, 255, 0.4)');
+            grad.addColorStop(0.7, 'rgba(100, 200, 230, 0.2)');
+            grad.addColorStop(1, 'rgba(60, 150, 200, 0.05)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(200, 230, 255, 0.25)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    // =========================================================================
+    // Bioluminescence cascade finale
+    // =========================================================================
+
+    var cascade = {
+        active: false,
+        startTime: 0,
+        originX: 0,
+        originY: 0,
+        duration: 12, // seconds
+        waveSpeed: 250, // px/s
+    };
+    var cascadeWaves = []; // expanding trigger waves
+
+    function triggerCascade(cx, cy) {
+        cascade.active = true;
+        cascade.startTime = animTime;
+        cascade.originX = cx;
+        cascade.originY = cy;
+        cascadeWaves = [];
+        // Spawn 5 staggered waves
+        for (var i = 0; i < 5; i++) {
+            cascadeWaves.push({ startTime: animTime + i * 0.5, radius: 0 });
+        }
+    }
+
+    function updateCascade(time) {
+        if (!cascade.active) return;
+        var elapsed = time - cascade.startTime;
+        if (elapsed > cascade.duration) {
+            cascade.active = false;
+            cascadeWaves = [];
+            return;
+        }
+        // Expand waves
+        for (var i = 0; i < cascadeWaves.length; i++) {
+            var w = cascadeWaves[i];
+            if (time > w.startTime) {
+                w.radius = (time - w.startTime) * cascade.waveSpeed;
+            }
+        }
+        // Continuously spawn bioluminescence during cascade
+        if (Math.random() < 0.3) {
+            var angle = Math.random() * Math.PI * 2;
+            var dist = Math.random() * Math.max(W, H) * 0.8;
+            spawnBioluminescence(
+                W / 2 + Math.cos(angle) * dist,
+                H / 2 + Math.sin(angle) * dist
+            );
+        }
+    }
+
+    function drawCascade(time) {
+        if (!cascade.active) return;
+        var elapsed = time - cascade.startTime;
+        var prevComp = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = 'lighter';
+
+        // Draw expanding light waves
+        for (var i = 0; i < cascadeWaves.length; i++) {
+            var w = cascadeWaves[i];
+            if (w.radius < 1) continue;
+            var waveAge = time - w.startTime;
+            var alpha = Math.max(0, 0.12 * (1 - waveAge / (cascade.duration * 0.8)));
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(cascade.originX, cascade.originY, w.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(100, 255, 218, 1)';
+            ctx.lineWidth = 30 * (1 - waveAge / cascade.duration);
+            ctx.stroke();
+        }
+
+        // Overall ambient glow that builds then fades
+        var glowIntensity = elapsed < cascade.duration * 0.6
+            ? Math.min(elapsed / 3, 0.15)
+            : 0.15 * (1 - (elapsed - cascade.duration * 0.6) / (cascade.duration * 0.4));
+        ctx.globalAlpha = Math.max(0, glowIntensity);
+        ctx.fillStyle = 'rgba(29, 233, 182, 1)';
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = prevComp;
     }
 
     // =========================================================================
@@ -1720,7 +2221,7 @@
         // Screen shake for dramatic numeric reveals (temperature, speed)
         if (questionId === 'temperature' || questionId === 'speed') {
             answerAnimTimerIds.push(setTimeout(function () {
-                screenShake(3, 200);
+                triggerScreenShake(6);
             }, 1400));
         }
 
@@ -1839,6 +2340,16 @@
         discoveredCreatures = {};
         creatureFlashAlpha = 0;
         streakGlowAlpha = 0;
+        shockwaves = [];
+        sonoFlash.active = false;
+        screenShake.intensity = 0;
+        whale.active = false;
+        whale.triggered = false;
+        cascade.active = false;
+        cascadeWaves = [];
+        fingerTrail = [];
+        userBubbles = [];
+        nursery.active = false;
         // Cancel any in-flight respawn timers
         for (var i = 0; i < respawnTimerIds.length; i++) {
             clearTimeout(respawnTimerIds[i]);
@@ -1965,6 +2476,62 @@
         spawnRipple(px, py);
     });
 
+    // Finger-trail bioluminescence — track pointermove
+    var nurseryTimer = null;
+    canvas.addEventListener('pointermove', function (e) {
+        if (appState !== State.BUBBLES) return;
+        var rect = canvas.getBoundingClientRect();
+        var px = e.clientX - rect.left;
+        var py = e.clientY - rect.top;
+        addTrailPoint(px, py);
+        // Update nursery position if active
+        if (nursery.active) {
+            nursery.x = px;
+            nursery.y = py;
+        }
+    });
+
+    // Bubble nursery — long press to create
+    canvas.addEventListener('pointerdown', function (e) {
+        if (appState !== State.BUBBLES) return;
+        var rect = canvas.getBoundingClientRect();
+        var px = e.clientX - rect.left;
+        var py = e.clientY - rect.top;
+        // Start nursery timer (1.5s long press)
+        if (nurseryTimer) clearTimeout(nurseryTimer);
+        nurseryTimer = setTimeout(function () {
+            nursery.active = true;
+            nursery.x = px;
+            nursery.y = py;
+            nursery.startTime = animTime;
+            nursery.radius = 5;
+        }, 1500);
+    });
+
+    canvas.addEventListener('pointerup', function () {
+        if (nurseryTimer) { clearTimeout(nurseryTimer); nurseryTimer = null; }
+        if (nursery.active) {
+            // Release the bubble
+            userBubbles.push({
+                x: nursery.x,
+                y: nursery.y,
+                radius: nursery.radius,
+                speed: 0.3 + (40 - nursery.radius) * 0.02, // bigger = slower
+                wobblePhase: Math.random() * Math.PI * 2,
+                wobbleAmp: 0.15 + Math.random() * 0.2,
+                wobbleFreq: 0.5 + Math.random() * 0.3,
+            });
+            nursery.active = false;
+            // Cap user bubbles
+            if (userBubbles.length > 12) userBubbles.shift();
+        }
+    });
+
+    canvas.addEventListener('pointercancel', function () {
+        if (nurseryTimer) { clearTimeout(nurseryTimer); nurseryTimer = null; }
+        nursery.active = false;
+    });
+
     canvas.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });
     document.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
     document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -2007,6 +2574,10 @@
     function drawDecorativeBubble(b, time) {
         var x = b.x + Math.sin(time * b.wobbleFreq + b.wobbleOffset) * b.wobbleAmp;
         var y = b.y;
+        // Shockwave displacement
+        var disp = getShockwaveDisplacement(x, y);
+        x += disp.x;
+        y += disp.y;
         var r = b.r;
         ctx.globalAlpha = b.opacity;
         var grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
@@ -2187,7 +2758,14 @@
         animTime = time;
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        // Screen shake (applied before all drawing)
+        applyScreenShake(dt);
+
         ctx.drawImage(bgCanvas, 0, 0, W * dpr, H * dpr, 0, 0, W, H);
+
+        // Whale silhouette (deepest layer, behind everything)
+        drawWhale(time);
 
         // God rays (behind everything)
         drawGodRays(time);
@@ -2209,6 +2787,11 @@
         updateMarineSnow(dt);
         updateFish(dt);
         updateBioParticles(dt);
+        updateTrailParticles(dt);
+        updateShockwaves(dt);
+        updateSonoFlash(dt);
+        updateUserBubbles(dt);
+        updateCascade(time);
         if (appState === State.BUBBLES || appState === State.ANSWER) {
             updateQuestionBubbles(dt);
         }
@@ -2234,11 +2817,27 @@
             }
         }
 
+        // User-created bubbles (behind question bubbles)
+        drawUserBubbles(time);
+        drawNurseryBubble(time);
+
         // Draw particles (on top)
         drawParticles();
 
+        // Shockwave rings (on top of scene)
+        drawShockwaves();
+
+        // Sonoluminescence flash (on top of scene)
+        drawSonoFlash();
+
         // Bioluminescence particles (additive, on top of scene)
         drawBioParticles();
+
+        // Finger-trail bioluminescence
+        drawFingerTrail(time);
+
+        // Bioluminescence cascade (finale)
+        drawCascade(time);
 
         // Streak glow pulse
         drawStreakGlow(dt);
