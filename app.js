@@ -1,4 +1,4 @@
-// app.js — Bubble Quiz v2: fish, god rays, visual answers, delight interactions
+// app.js — Bubble Quiz: underwater exhibit app for Edinburgh Science Festival 2026
 (function () {
     'use strict';
 
@@ -21,7 +21,7 @@
 
     var DECORATIVE_COUNT = 50;
     var QUESTION_BUBBLE_COUNT = 4;
-    var MAX_PARTICLES = 80;
+    var MAX_PARTICLES = 120;
     var BURST_PARTICLE_COUNT = 24;
     var BURST_RING_COUNT = 3;
     var MINI_BURST_COUNT = 8;
@@ -375,13 +375,14 @@
         ctx.globalAlpha = jf.opacity;
         ctx.translate(cx, cy);
 
-        // Bell (deformed semicircle)
+        // Bell (dome curves upward, opens downward)
         ctx.beginPath();
+        var first = true;
         for (var a = 0; a <= Math.PI; a += 0.05) {
             var wobble = Math.sin(a * 3 + time * 2) * 2;
-            var bx = Math.cos(a + Math.PI) * (r + wobble);
-            var by = Math.sin(a + Math.PI) * (r * 0.7 + wobble * 0.5);
-            if (a === 0) ctx.moveTo(bx, by);
+            var bx = Math.cos(a) * (r + wobble); // left-to-right across top
+            var by = -Math.sin(a) * (r * 0.7 + wobble * 0.5); // dome goes upward (negative y)
+            if (first) { ctx.moveTo(bx, by); first = false; }
             else ctx.lineTo(bx, by);
         }
         ctx.closePath();
@@ -396,7 +397,7 @@
         ctx.stroke();
 
         // Tentacles
-        var bellBottom = r * 0.1; // bottom of bell
+        var bellBottom = r * 0.1; // bottom of bell (where it opens)
         for (var t = 0; t < jf.tentacles; t++) {
             var tx = (t / (jf.tentacles - 1) - 0.5) * r * 1.6;
             ctx.beginPath();
@@ -434,11 +435,12 @@
         gctx.putImageData(imgData, 0, 0);
     })();
 
+    var grainPattern = null; // created lazily (needs canvas context)
+
     function drawGrain() {
+        if (!grainPattern) grainPattern = ctx.createPattern(grainCanvas, 'repeat');
         ctx.globalAlpha = 0.025;
-        // Tile the grain across the screen
-        var pat = ctx.createPattern(grainCanvas, 'repeat');
-        ctx.fillStyle = pat;
+        ctx.fillStyle = grainPattern;
         ctx.fillRect(0, 0, W, H);
         ctx.globalAlpha = 1;
     }
@@ -535,62 +537,102 @@
         shrimp: { name: 'Pistol Shrimp', emoji: '\u{1F990}' },
     };
 
-    // Sea turtle — glides slowly right-to-left across the upper third
+    // Sea turtle — glides left across the upper third, anatomically correct
     function drawSeaTurtle(time, c) {
-        var progress = (time - c.startTime) * 0.015; // slow drift
-        var x = W + 80 - (progress * W * 0.5) % (W + 160);
-        if (x < -80) x += W + 160;
+        // Smooth ping-pong traversal (no teleport on modulo reset)
+        var period = 40; // seconds for a full crossing
+        var phase = ((time - c.startTime) % period) / period;
+        var x = (1 - phase) * (W + 120) - 60; // right-to-left
         var y = H * 0.2 + Math.sin(time * 0.3 + 1.5) * 20;
         var sz = 28;
 
         ctx.save();
         ctx.globalAlpha = 0.7;
         ctx.translate(x, y);
+        ctx.scale(-1, 1); // face left (direction of travel)
 
-        // Shell (oval)
+        // Shell (teardrop/heart shape — tapered rear)
         ctx.beginPath();
-        ctx.ellipse(0, 0, sz, sz * 0.6, 0, 0, Math.PI * 2);
+        ctx.moveTo(sz * 1.05, 0);
+        ctx.quadraticCurveTo(sz * 0.9, -sz * 0.6, 0, -sz * 0.55);
+        ctx.quadraticCurveTo(-sz * 0.7, -sz * 0.4, -sz * 0.75, 0);
+        ctx.quadraticCurveTo(-sz * 0.7, sz * 0.4, 0, sz * 0.55);
+        ctx.quadraticCurveTo(sz * 0.9, sz * 0.6, sz * 1.05, 0);
+        ctx.closePath();
         ctx.fillStyle = '#5a8a4a';
         ctx.fill();
         ctx.strokeStyle = '#3d6632';
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Shell pattern
+        // Shell scute pattern (central ridge + lateral lines)
         ctx.beginPath();
-        ctx.ellipse(0, 0, sz * 0.6, sz * 0.35, 0, 0, Math.PI * 2);
+        ctx.moveTo(sz * 0.9, 0);
+        ctx.lineTo(-sz * 0.6, 0);
+        ctx.moveTo(sz * 0.3, -sz * 0.05);
+        ctx.quadraticCurveTo(0, -sz * 0.35, -sz * 0.4, -sz * 0.2);
+        ctx.moveTo(sz * 0.3, sz * 0.05);
+        ctx.quadraticCurveTo(0, sz * 0.35, -sz * 0.4, sz * 0.2);
         ctx.strokeStyle = 'rgba(61, 102, 50, 0.5)';
+        ctx.lineWidth = 0.8;
         ctx.stroke();
 
-        // Head
+        // Head (larger, ~1/3 shell width)
         ctx.beginPath();
-        ctx.ellipse(sz + 8, 0, 8, 6, 0, 0, Math.PI * 2);
+        ctx.ellipse(sz * 1.15, 0, sz * 0.32, sz * 0.25, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#7ab867';
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(sz + 12, -2, 1.5, 0, Math.PI * 2);
+        ctx.arc(sz * 1.3, -sz * 0.06, 2, 0, Math.PI * 2);
         ctx.fillStyle = '#1a1a2e';
         ctx.fill();
 
-        // Flippers (animated)
-        var flipAngle = Math.sin(time * 1.5) * 0.3;
-        // Front flippers
+        // Front flippers — synchronous "flying" stroke
+        var flipAngle = Math.sin(time * 2.5) * 0.4; // ~0.4 Hz
         ctx.save();
-        ctx.translate(sz * 0.4, -sz * 0.5);
-        ctx.rotate(-0.4 + flipAngle);
+        ctx.translate(sz * 0.5, -sz * 0.45);
+        ctx.rotate(-0.5 + flipAngle);
         ctx.beginPath();
-        ctx.ellipse(0, 0, 16, 5, -0.3, 0, Math.PI * 2);
+        ctx.ellipse(8, 0, 18, 4.5, -0.2, 0, Math.PI * 2);
         ctx.fillStyle = '#7ab867';
         ctx.fill();
         ctx.restore();
         ctx.save();
-        ctx.translate(sz * 0.4, sz * 0.5);
-        ctx.rotate(0.4 - flipAngle);
+        ctx.translate(sz * 0.5, sz * 0.45);
+        ctx.rotate(0.5 - flipAngle);
         ctx.beginPath();
-        ctx.ellipse(0, 0, 16, 5, 0.3, 0, Math.PI * 2);
+        ctx.ellipse(8, 0, 18, 4.5, 0.2, 0, Math.PI * 2);
         ctx.fillStyle = '#7ab867';
         ctx.fill();
         ctx.restore();
+
+        // Rear flippers — smaller, alternating paddle
+        var rearFlip = Math.sin(time * 2.5 + 1.5) * 0.25;
+        ctx.save();
+        ctx.translate(-sz * 0.55, -sz * 0.3);
+        ctx.rotate(-0.3 + rearFlip);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 10, 3.5, -0.1, 0, Math.PI * 2);
+        ctx.fillStyle = '#6aa85a';
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(-sz * 0.55, sz * 0.3);
+        ctx.rotate(0.3 - rearFlip);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 10, 3.5, 0.1, 0, Math.PI * 2);
+        ctx.fillStyle = '#6aa85a';
+        ctx.fill();
+        ctx.restore();
+
+        // Tail stub
+        ctx.beginPath();
+        ctx.moveTo(-sz * 0.7, 0);
+        ctx.lineTo(-sz * 0.95, -sz * 0.08);
+        ctx.lineTo(-sz * 0.95, sz * 0.08);
+        ctx.closePath();
+        ctx.fillStyle = '#6aa85a';
+        ctx.fill();
 
         ctx.restore();
     }
@@ -627,11 +669,11 @@
         ctx.closePath();
         ctx.fill();
 
-        // Dorsal fin
+        // Dorsal fin (mid-body, ~40% from nose)
         ctx.beginPath();
-        ctx.moveTo(sz * 0.3, -sz * 0.1);
-        ctx.lineTo(sz * 0.5, -sz * 0.5);
-        ctx.lineTo(sz * 0.7, -sz * 0.1);
+        ctx.moveTo(sz * 0.1, -sz * 0.12);
+        ctx.lineTo(sz * 0.3, -sz * 0.55);
+        ctx.lineTo(sz * 0.5, -sz * 0.12);
         ctx.fill();
 
         // Tail
@@ -651,51 +693,96 @@
         ctx.restore();
     }
 
-    // Seahorse — bobs up from the seaweed, gentle vertical drift
+    // Seahorse — vertical posture, curled tail, coronet, segmented body
     function drawSeahorse(time, c) {
         var entryProgress = Math.min((time - c.startTime) * 0.5, 1);
-        var baseY = H * 0.75 - entryProgress * H * 0.15;
+        var baseY = H * 0.72 - entryProgress * H * 0.12;
         var x = W * 0.12 + Math.sin(time * 0.2 + 2) * 8;
         var y = baseY + Math.sin(time * 0.8) * 6;
-        var sz = 14;
+        var sz = 12;
 
         ctx.save();
-        ctx.globalAlpha = 0.65 * entryProgress;
+        ctx.globalAlpha = 0.7 * entryProgress;
         ctx.translate(x, y);
 
-        // Curved body (S-shape via arcs)
+        // Curled prehensile tail (logarithmic spiral at bottom)
         ctx.beginPath();
-        ctx.moveTo(0, -sz * 1.8);
-        ctx.quadraticCurveTo(sz * 0.8, -sz * 1.2, sz * 0.3, -sz * 0.3);
-        ctx.quadraticCurveTo(-sz * 0.3, sz * 0.4, 0, sz);
-        ctx.quadraticCurveTo(sz * 0.2, sz * 1.3, -sz * 0.1, sz * 1.5);
-        ctx.lineWidth = sz * 0.5;
+        ctx.moveTo(sz * 0.1, sz * 1.2);
+        ctx.quadraticCurveTo(sz * 0.5, sz * 1.8, sz * 0.3, sz * 2.2);
+        ctx.quadraticCurveTo(-sz * 0.1, sz * 2.5, -sz * 0.3, sz * 2.2);
+        ctx.quadraticCurveTo(-sz * 0.5, sz * 1.9, -sz * 0.15, sz * 1.7);
+        ctx.quadraticCurveTo(sz * 0.1, sz * 1.5, sz * 0.05, sz * 1.4);
+        ctx.lineWidth = sz * 0.25;
+        ctx.strokeStyle = '#e09350';
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Body trunk (vertical, slightly convex belly)
+        ctx.beginPath();
+        ctx.moveTo(0, -sz * 0.8); // neck base
+        ctx.quadraticCurveTo(sz * 0.6, -sz * 0.2, sz * 0.45, sz * 0.5); // belly curves out
+        ctx.quadraticCurveTo(sz * 0.25, sz * 1.0, sz * 0.1, sz * 1.2); // taper to tail
+        ctx.lineWidth = sz * 0.55;
         ctx.strokeStyle = '#f4a261';
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        // Snout
+        // Body segments (horizontal ridges)
+        ctx.strokeStyle = 'rgba(200, 130, 60, 0.4)';
+        ctx.lineWidth = 0.6;
+        for (var seg = 0; seg < 7; seg++) {
+            var sy = -sz * 0.5 + seg * sz * 0.3;
+            var sw = sz * 0.35 - Math.abs(seg - 3) * sz * 0.03;
+            ctx.beginPath();
+            ctx.moveTo(-sw, sy);
+            ctx.lineTo(sw + sz * 0.15, sy);
+            ctx.stroke();
+        }
+
+        // Head (angled ~45 degrees from body, facing right)
+        ctx.save();
+        ctx.translate(0, -sz * 0.9);
+        ctx.rotate(-0.3); // slight forward tilt
+
+        // Coronet (small crown bump on top)
         ctx.beginPath();
-        ctx.moveTo(0, -sz * 1.8);
-        ctx.lineTo(sz * 0.6, -sz * 2);
-        ctx.lineWidth = sz * 0.2;
+        ctx.moveTo(-sz * 0.1, -sz * 0.6);
+        ctx.lineTo(0, -sz * 0.85);
+        ctx.lineTo(sz * 0.1, -sz * 0.6);
+        ctx.fillStyle = '#d08840';
+        ctx.fill();
+
+        // Head shape
+        ctx.beginPath();
+        ctx.ellipse(0, -sz * 0.3, sz * 0.28, sz * 0.35, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#f4a261';
+        ctx.fill();
+
+        // Tubular snout (angled downward-forward)
+        ctx.beginPath();
+        ctx.moveTo(sz * 0.2, -sz * 0.25);
+        ctx.lineTo(sz * 0.75, -sz * 0.45);
+        ctx.lineWidth = sz * 0.15;
         ctx.strokeStyle = '#e09350';
+        ctx.lineCap = 'round';
         ctx.stroke();
 
         // Eye
         ctx.beginPath();
-        ctx.arc(sz * 0.1, -sz * 1.5, 2, 0, Math.PI * 2);
+        ctx.arc(sz * 0.05, -sz * 0.35, 1.8, 0, Math.PI * 2);
         ctx.fillStyle = '#1a1a2e';
         ctx.fill();
 
-        // Dorsal fin (fluttering)
-        var flutter = Math.sin(time * 6) * 0.15;
+        ctx.restore();
+
+        // Dorsal fin (fluttering rapidly on the back)
+        var flutter = Math.sin(time * 15) * 0.08; // fast flutter
         ctx.save();
-        ctx.translate(sz * 0.2, -sz * 0.6);
+        ctx.translate(-sz * 0.15, sz * 0.1);
         ctx.rotate(flutter);
         ctx.beginPath();
-        ctx.ellipse(0, 0, sz * 0.5, sz * 0.15, 0.2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(244, 162, 97, 0.5)';
+        ctx.ellipse(0, 0, sz * 0.12, sz * 0.4, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(244, 162, 97, 0.45)';
         ctx.fill();
         ctx.restore();
 
@@ -729,11 +816,15 @@
             var sf = schoolFish[i];
             var fx = cx + sf.ox + Math.sin(time * 0.8 + sf.phase) * 8;
             var fy = cy + sf.oy + Math.cos(time * 0.6 + sf.phase) * 5;
-            var dir = Math.cos(progress * 0.7) > 0 ? 1 : -1;
+            // Smooth direction: use cosine directly for gradual heading
+            var heading = Math.cos(progress * 0.7);
+            var dir = heading > 0 ? 1 : -1;
+            // Smooth turn: compress fish horizontally near zero-crossing
+            var squeeze = Math.min(Math.abs(heading) * 3, 1);
 
             ctx.save();
             ctx.translate(fx, fy);
-            ctx.scale(dir, 1);
+            ctx.scale(dir * squeeze, 1);
             // Tiny fish body
             ctx.beginPath();
             ctx.ellipse(0, 0, sf.size, sf.size * 0.45, 0, 0, Math.PI * 2);
@@ -769,6 +860,7 @@
         ctx.save();
         ctx.globalAlpha = 0.75 * entryProgress;
         ctx.translate(x, y);
+        ctx.scale(-1, 1); // face inward (left)
 
         // Body segments
         ctx.beginPath();
@@ -849,13 +941,14 @@
         ctx.fillStyle = glow;
         ctx.fillRect(-r * 2.5, -r * 2.5, r * 5, r * 5);
 
-        // Bell
+        // Bell (dome curves upward, opens downward)
         ctx.beginPath();
+        var first = true;
         for (var a = 0; a <= Math.PI; a += 0.06) {
             var wobble = Math.sin(a * 4 + time * 2.5) * 1.5;
-            var bx = Math.cos(a + Math.PI) * (r + wobble);
-            var by = Math.sin(a + Math.PI) * (r * 0.65 + wobble * 0.5);
-            if (a === 0) ctx.moveTo(bx, by);
+            var bx = Math.cos(a) * (r + wobble);
+            var by = -Math.sin(a) * (r * 0.65 + wobble * 0.5);
+            if (first) { ctx.moveTo(bx, by); first = false; }
             else ctx.lineTo(bx, by);
         }
         ctx.closePath();
@@ -1379,6 +1472,7 @@
             osc2.start();
 
             // Fade in over 2 seconds
+            this.droneGain.gain.setValueAtTime(0, actx.currentTime);
             this.droneGain.gain.linearRampToValueAtTime(0.06, actx.currentTime + 2);
         },
 
