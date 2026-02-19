@@ -453,6 +453,7 @@ html, body {
     white-space: nowrap;
     animation: idle-pulse 1s ease-in-out infinite;
     transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 #idle-warning.hidden {
