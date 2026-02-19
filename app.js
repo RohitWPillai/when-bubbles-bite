@@ -33,6 +33,9 @@
     var GOD_RAY_COUNT = 4;
     var PARTICLE_LIFE_FRAMES = 30;
     var RING_LIFE_FRAMES = 36;
+    var MARINE_SNOW_COUNT = 100;
+    var CAUSTIC_COUNT = 25;
+    var IDLE_WARNING_MS = 40000; // show warning 5s before reset
 
     // Fish colour schemes (Nemo wink but distinct)
     var FISH_PALETTES = [
@@ -125,18 +128,136 @@
             var botX = rayX + sway * 0.5 + ray.width * 0.8;
             var hw = ray.width / 2;
 
-            ctx.globalAlpha = ray.opacity;
+            // Shimmer: one ray briefly pulses every few seconds
+            var shimmer = Math.max(0, Math.sin(time * 0.2 + i * 1.7)) > 0.95 ? 0.02 : 0;
+            ctx.globalAlpha = ray.opacity + shimmer;
             ctx.beginPath();
             ctx.moveTo(topX - hw * 0.3, 0);
             ctx.lineTo(topX + hw * 0.3, 0);
             ctx.lineTo(botX + hw, H);
             ctx.lineTo(botX - hw, H);
             ctx.closePath();
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = 'rgba(255, 248, 220, 1)'; // warm cream tint
             ctx.fill();
             ctx.globalAlpha = 1;
         }
     }
+
+    // =========================================================================
+    // Marine snow (ambient particles)
+    // =========================================================================
+
+    var marineSnow = [];
+    for (var i = 0; i < MARINE_SNOW_COUNT; i++) {
+        marineSnow.push({
+            x: Math.random() * 2000, // will be clamped to W on draw
+            y: Math.random() * 2000,
+            size: 1 + Math.random() * 2,
+            speed: 0.08 + Math.random() * 0.15,
+            driftPhase: Math.random() * Math.PI * 2,
+            driftFreq: 0.3 + Math.random() * 0.4,
+            driftAmp: 0.2 + Math.random() * 0.4,
+            alpha: 0.08 + Math.random() * 0.07,
+            twinklePhase: Math.random() * Math.PI * 2,
+        });
+    }
+
+    function updateMarineSnow(dt) {
+        for (var i = 0; i < marineSnow.length; i++) {
+            var s = marineSnow[i];
+            s.y += s.speed * dt;
+            s.x += Math.sin(animTime * s.driftFreq + s.driftPhase) * s.driftAmp * dt;
+            if (s.y > H + 5) {
+                s.y = -5;
+                s.x = Math.random() * W;
+            }
+            if (s.x > W + 5) s.x = -5;
+            if (s.x < -5) s.x = W + 5;
+        }
+    }
+
+    function drawMarineSnow(time) {
+        for (var i = 0; i < marineSnow.length; i++) {
+            var s = marineSnow[i];
+            var twinkle = 0.7 + 0.3 * Math.sin(time * 1.5 + s.twinklePhase);
+            ctx.globalAlpha = s.alpha * twinkle;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(s.x | 0, s.y | 0, s.size, s.size);
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // =========================================================================
+    // Caustic light overlay
+    // =========================================================================
+
+    var causticSprites = []; // pre-rendered offscreen canvases
+    var caustics = [];
+
+    function initCaustics() {
+        // Pre-render 4 sizes of soft gradient circles
+        var sizes = [30, 50, 70, 90];
+        causticSprites = [];
+        for (var s = 0; s < sizes.length; s++) {
+            var sz = sizes[s];
+            var oc = document.createElement('canvas');
+            oc.width = sz * 2;
+            oc.height = sz * 2;
+            var octx = oc.getContext('2d');
+            var grad = octx.createRadialGradient(sz, sz, 0, sz, sz, sz);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+            grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            octx.fillStyle = grad;
+            octx.beginPath();
+            octx.ellipse(sz, sz, sz, sz * 0.65, 0, 0, Math.PI * 2);
+            octx.fill();
+            causticSprites.push(oc);
+        }
+
+        caustics = [];
+        for (var i = 0; i < CAUSTIC_COUNT; i++) {
+            caustics.push({
+                x: Math.random() * 2000,
+                y: 0.5 + Math.random() * 0.5, // fractional Y in lower half
+                sprite: Math.floor(Math.random() * sizes.length),
+                driftXPhase: Math.random() * Math.PI * 2,
+                driftYPhase: Math.random() * Math.PI * 2,
+                driftXFreq: 0.013 + Math.random() * 0.02,
+                driftYFreq: 0.019 + Math.random() * 0.015,
+                driftXAmp: 20 + Math.random() * 40,
+                driftYAmp: 10 + Math.random() * 20,
+                pulsePhase: Math.random() * Math.PI * 2,
+                pulseFreq: 0.4 + Math.random() * 0.6,
+                baseAlpha: 0.03 + Math.random() * 0.03,
+            });
+        }
+    }
+
+    initCaustics();
+
+    function drawCaustics(time) {
+        var prevComp = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = 'lighter';
+        for (var i = 0; i < caustics.length; i++) {
+            var c = caustics[i];
+            var cx = (c.x / 2000) * W + Math.sin(time * c.driftXFreq + c.driftXPhase) * c.driftXAmp;
+            var cy = c.y * H + Math.sin(time * c.driftYFreq + c.driftYPhase) * c.driftYAmp;
+            var pulse = 0.8 + 0.2 * Math.sin(time * c.pulseFreq + c.pulsePhase);
+            var sprite = causticSprites[c.sprite];
+            ctx.globalAlpha = c.baseAlpha * pulse;
+            ctx.drawImage(sprite, (cx - sprite.width / 2) | 0, (cy - sprite.height / 2) | 0);
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = prevComp;
+    }
+
+    // =========================================================================
+    // Idle warning state
+    // =========================================================================
+
+    var idleWarningShown = false;
+    var idleWarningEl = document.getElementById('idle-warning');
 
     // =========================================================================
     // Fish
@@ -371,6 +492,10 @@
             wobbleAmp: 0.2 + Math.random() * 0.3,
             wobbleFreq: 0.4 + Math.random() * 0.4,
             glowPhase: Math.random() * Math.PI * 2,
+            // Squeeze-pop state
+            popPhase: null, // null | 'squeeze'
+            squeezeStart: 0,
+            drawScale: 1,
         };
     }
 
@@ -399,6 +524,8 @@
         qb.speed = 0.5 + Math.random() * 0.3;
         qb.wobbleOffset = Math.random() * Math.PI * 2;
         qb.glowPhase = Math.random() * Math.PI * 2;
+        qb.popPhase = null;
+        qb.drawScale = 1;
     }
 
     function drainPendingRespawns() {
@@ -483,6 +610,8 @@
         ctx: null,
         noiseBuffer: null,
         muted: false,
+        masterFilter: null, // underwater lowpass
+        masterOut: null, // final output node (filter or destination)
 
         init: function () {
             if (this.ctx) return;
@@ -491,6 +620,13 @@
             try {
                 this.ctx = new AC();
                 if (this.ctx.state === 'suspended') this.ctx.resume();
+                // Underwater master filter — muffles highs for submerged feel
+                this.masterFilter = this.ctx.createBiquadFilter();
+                this.masterFilter.type = 'lowpass';
+                this.masterFilter.frequency.value = 2000;
+                this.masterFilter.Q.value = 1;
+                this.masterFilter.connect(this.ctx.destination);
+                this.masterOut = this.masterFilter;
                 var bufferSize = Math.floor(this.ctx.sampleRate * 0.08);
                 this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 var data = this.noiseBuffer.getChannelData(0);
@@ -503,6 +639,7 @@
         playPop: function (mini) {
             if (this.muted || !this.ctx || !this.noiseBuffer) return;
             var actx = this.ctx;
+            var dest = this.masterOut;
             var now = actx.currentTime;
             var vol = mini ? 0.15 : 0.4;
             var freq = mini ? 1000 : 800;
@@ -518,7 +655,7 @@
             noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
             noise.connect(bandpass);
             bandpass.connect(noiseGain);
-            noiseGain.connect(actx.destination);
+            noiseGain.connect(dest);
             noise.start(now);
             noise.stop(now + 0.06);
 
@@ -530,7 +667,7 @@
             oscGain.gain.setValueAtTime(vol * 0.5, now);
             oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
             osc.connect(oscGain);
-            oscGain.connect(actx.destination);
+            oscGain.connect(dest);
             osc.start(now);
             osc.stop(now + 0.08);
         }
@@ -555,6 +692,9 @@
     var dismissBtn = document.getElementById('dismiss-btn');
     var answerAnimTimerIds = []; // tracked animation setTimeouts for answer overlays
 
+    var lastPopX = 0.5; // fractional position for radial reveal
+    var lastPopY = 0.5;
+
     function showAnswer(questionId) {
         var question = null;
         for (var i = 0; i < QUESTIONS.length; i++) {
@@ -568,11 +708,14 @@
 
         switch (question.answerType) {
             case 'bar-chart': renderBarChart(question.answer); break;
-            case 'big-reveal': renderBigReveal(question.answer); break;
+            case 'big-reveal': renderBigReveal(question.answer, questionId); break;
             case 'text-fact': renderTextFact(question.answer); break;
             case 'icon-grid': renderIconGrid(question.answer); break;
         }
 
+        // Radial reveal from pop position
+        overlayEl.style.setProperty('--pop-x', (lastPopX * 100).toFixed(1) + '%');
+        overlayEl.style.setProperty('--pop-y', (lastPopY * 100).toFixed(1) + '%');
         overlayEl.classList.remove('hidden');
     }
 
@@ -608,7 +751,51 @@
         }
     }
 
-    function renderBigReveal(data) {
+    // Screen micro-shake for dramatic reveals
+    function screenShake(intensity, duration) {
+        var el = document.getElementById('bubble-canvas');
+        var start = performance.now();
+        function shake(now) {
+            var elapsed = now - start;
+            if (elapsed > duration) { el.style.transform = ''; return; }
+            var decay = 1 - (elapsed / duration);
+            var x = (Math.random() - 0.5) * intensity * decay;
+            var y = (Math.random() - 0.5) * intensity * decay;
+            el.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+            requestAnimationFrame(shake);
+        }
+        // Respect prefers-reduced-motion
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        requestAnimationFrame(shake);
+    }
+
+    // Number count-up animation
+    function animateCountUp(el, targetStr, duration) {
+        // Extract numeric value (e.g. "4,700" → 4700)
+        var stripped = targetStr.replace(/,/g, '');
+        var target = parseFloat(stripped);
+        if (isNaN(target)) { el.textContent = targetStr; return; }
+        var isInt = stripped.indexOf('.') === -1;
+        var start = performance.now();
+        function tick(now) {
+            var elapsed = now - start;
+            var progress = Math.min(elapsed / duration, 1);
+            // ease-out cubic
+            var eased = 1 - Math.pow(1 - progress, 3);
+            var current = target * eased;
+            if (isInt) {
+                el.textContent = Math.round(current).toLocaleString();
+            } else {
+                el.textContent = current.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            }
+            if (progress < 1) requestAnimationFrame(tick);
+            else el.textContent = targetStr; // ensure exact final value
+        }
+        el.textContent = '0';
+        requestAnimationFrame(tick);
+    }
+
+    function renderBigReveal(data, questionId) {
         var html = '<div class="big-reveal-container">' +
             '<div class="big-reveal-label">' + escapeHTML(data.label) + '</div>' +
             '<div class="big-reveal-number">' + escapeHTML(data.number) + '</div>';
@@ -636,6 +823,19 @@
         }
         html += '</div>';
         contentEl.innerHTML = html;
+
+        // Number count-up animation
+        var numberEl = contentEl.querySelector('.big-reveal-number');
+        if (numberEl) {
+            animateCountUp(numberEl, data.number, 1500);
+        }
+
+        // Screen shake for dramatic numeric reveals (temperature, speed)
+        if (questionId === 'temperature' || questionId === 'speed') {
+            answerAnimTimerIds.push(setTimeout(function () {
+                screenShake(3, 200);
+            }, 1400));
+        }
 
         // Stagger badge animation
         var badges = contentEl.querySelectorAll('.badge');
@@ -703,6 +903,10 @@
     dismissBtn.addEventListener('pointerdown', function (e) {
         e.stopPropagation();
         e.preventDefault();
+        if (idleWarningShown) {
+            idleWarningShown = false;
+            if (idleWarningEl) idleWarningEl.classList.add('hidden');
+        }
         hideAnswer();
     });
 
@@ -710,6 +914,11 @@
     overlayEl.addEventListener('pointerdown', function (e) {
         if (e.target === overlayEl && appState === State.ANSWER) {
             e.preventDefault();
+            lastInteraction = Date.now();
+            if (idleWarningShown) {
+                idleWarningShown = false;
+                if (idleWarningEl) idleWarningEl.classList.add('hidden');
+            }
             hideAnswer();
         }
     });
@@ -729,6 +938,8 @@
         appState = State.SPLASH;
         splashEl.classList.remove('hidden');
         overlayEl.classList.add('hidden');
+        idleWarningShown = false;
+        if (idleWarningEl) idleWarningEl.classList.add('hidden');
         questionCooldowns = {};
         pendingRespawnIds = [];
         // Cancel any in-flight respawn timers
@@ -765,6 +976,11 @@
     canvas.addEventListener('pointerdown', function (e) {
         if (appState !== State.BUBBLES) return;
         lastInteraction = Date.now();
+        // Dismiss idle warning on any interaction
+        if (idleWarningShown) {
+            idleWarningShown = false;
+            if (idleWarningEl) idleWarningEl.classList.add('hidden');
+        }
 
         var rect = canvas.getBoundingClientRect();
         var px = e.clientX - rect.left;
@@ -773,32 +989,43 @@
         // Check question bubbles first (reverse draw order)
         for (var i = questionBubbles.length - 1; i >= 0; i--) {
             var qb = questionBubbles[i];
-            if (!qb.active) continue;
+            if (!qb.active || qb.popPhase) continue;
             var dx = px - qb.x;
             var dy = py - qb.y;
             var dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < qb.r * HIT_FORGIVENESS) {
-                audioManager.playPop(false);
-                spawnBurst(qb.x, qb.y, false);
-                startleFish(qb.x, qb.y);
-                questionCooldowns[qb.questionId] = Date.now() + QUESTION_COOLDOWN_MS;
-                var poppedId = qb.questionId;
-                qb.active = false;
-                showAnswer(poppedId);
-                (function (id) {
-                    var tid = setTimeout(function () {
-                        // Remove from active timers
-                        var tidx = respawnTimerIds.indexOf(tid);
-                        if (tidx !== -1) respawnTimerIds.splice(tidx, 1);
-                        if (appState === State.BUBBLES) {
-                            respawnQuestionBubbleById(id);
-                        } else if (appState === State.ANSWER) {
-                            pendingRespawnIds.push(id);
-                        }
-                        // If SPLASH, do nothing — session was reset
-                    }, 2000);
-                    respawnTimerIds.push(tid);
-                })(poppedId);
+                // Store pop position for radial reveal
+                lastPopX = qb.x / W;
+                lastPopY = qb.y / H;
+                // Anticipatory squeeze: shrink to 70% over 80ms, then burst
+                qb.popPhase = 'squeeze';
+                qb.squeezeStart = performance.now();
+                (function (bubble) {
+                    answerAnimTimerIds.push(setTimeout(function () {
+                        if (!bubble.active && bubble.popPhase !== 'squeeze') return;
+                        audioManager.playPop(false);
+                        spawnBurst(bubble.x, bubble.y, false);
+                        startleFish(bubble.x, bubble.y);
+                        questionCooldowns[bubble.questionId] = Date.now() + QUESTION_COOLDOWN_MS;
+                        var poppedId = bubble.questionId;
+                        bubble.active = false;
+                        bubble.popPhase = null;
+                        bubble.drawScale = 1;
+                        showAnswer(poppedId);
+                        (function (id) {
+                            var tid = setTimeout(function () {
+                                var tidx = respawnTimerIds.indexOf(tid);
+                                if (tidx !== -1) respawnTimerIds.splice(tidx, 1);
+                                if (appState === State.BUBBLES) {
+                                    respawnQuestionBubbleById(id);
+                                } else if (appState === State.ANSWER) {
+                                    pendingRespawnIds.push(id);
+                                }
+                            }, 2000);
+                            respawnTimerIds.push(tid);
+                        })(poppedId);
+                    }, 80));
+                })(qb);
                 return;
             }
         }
@@ -887,10 +1114,18 @@
     }
 
     function drawQuestionBubble(qb, time) {
-        if (!qb.active) return;
+        if (!qb.active && !qb.popPhase) return;
         var x = qb.x + Math.sin(time * qb.wobbleFreq + qb.wobbleOffset) * qb.wobbleAmp;
         var y = qb.y;
-        var r = qb.r;
+        // Breathing: gentle radius oscillation +/-2px over 3s
+        var breathe = 2 * Math.sin(time * 0.33 + qb.glowPhase);
+        var r = qb.r + breathe;
+        // Squeeze animation
+        if (qb.popPhase === 'squeeze') {
+            var elapsed = performance.now() - qb.squeezeStart;
+            qb.drawScale = 1 - 0.3 * Math.min(elapsed / 80, 1); // 1.0 → 0.7
+        }
+        r *= qb.drawScale;
         var glowIntensity = 15 + Math.sin(time * 2 + qb.glowPhase) * 8;
         ctx.save();
         ctx.shadowColor = COLORS.questionGlow;
@@ -1005,8 +1240,16 @@
     // =========================================================================
 
     function checkIdle() {
-        if ((appState === State.BUBBLES || appState === State.ANSWER) &&
-            Date.now() - lastInteraction > IDLE_TIMEOUT_MS) {
+        if (appState !== State.BUBBLES && appState !== State.ANSWER) return;
+        var elapsed = Date.now() - lastInteraction;
+        // Show warning 5s before reset
+        if (elapsed > IDLE_WARNING_MS && !idleWarningShown) {
+            idleWarningShown = true;
+            if (idleWarningEl) idleWarningEl.classList.remove('hidden');
+        }
+        if (elapsed > IDLE_TIMEOUT_MS) {
+            idleWarningShown = false;
+            if (idleWarningEl) idleWarningEl.classList.add('hidden');
             showSplash();
         }
     }
@@ -1034,8 +1277,15 @@
         // God rays (behind everything)
         drawGodRays(time);
 
+        // Caustic light overlay (lower half, behind fish)
+        drawCaustics(time);
+
+        // Marine snow (ambient particles, behind fish)
+        drawMarineSnow(time);
+
         // Update
         updateDecorativeBubbles(dt);
+        updateMarineSnow(dt);
         updateFish(dt);
         if (appState === State.BUBBLES || appState === State.ANSWER) {
             updateQuestionBubbles(dt);

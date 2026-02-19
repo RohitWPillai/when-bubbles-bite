@@ -92,7 +92,7 @@ html, body {
     50% { opacity: 1; transform: scale(1.05); }
 }
 
-/* Answer overlay */
+/* Answer overlay — radial reveal from pop position */
 #answer-overlay {
     position: fixed;
     top: 0;
@@ -105,13 +105,17 @@ html, body {
     justify-content: safe center;
     z-index: 50;
     background: rgba(9, 31, 54, 0.88);
-    transition: opacity 0.4s ease;
+    --pop-x: 50%;
+    --pop-y: 50%;
+    clip-path: circle(150% at var(--pop-x) var(--pop-y));
+    transition: clip-path 0.4s ease-out, opacity 0.3s ease;
     padding: 2rem;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
 #answer-overlay.hidden {
+    clip-path: circle(0% at var(--pop-x) var(--pop-y));
     opacity: 0;
     pointer-events: none;
 }
@@ -430,4 +434,32 @@ html, body {
     color: rgba(255, 255, 255, 0.6);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+/* Idle countdown warning */
+#idle-warning {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150;
+    background: rgba(9, 31, 54, 0.9);
+    border: 1px solid rgba(127, 219, 218, 0.4);
+    border-radius: 1.5rem;
+    padding: 0.8rem 1.8rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-family: sans-serif;
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    white-space: nowrap;
+    animation: idle-pulse 1s ease-in-out infinite;
+    transition: opacity 0.3s ease;
+}
+
+#idle-warning.hidden {
+    display: none;
+}
+
+@keyframes idle-pulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; border-color: rgba(127, 219, 218, 0.7); }
 }
