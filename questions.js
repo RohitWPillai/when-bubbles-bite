@@ -14,7 +14,7 @@ window.QUESTIONS = [
                 { label: 'Fighter Jet', value: 2200,  display: '2,200 km/h', icon: '\u{2708}\u{FE0F}', color: '#e9c46a' },
                 { label: 'Bubble',      value: 5000,  display: '5,000 km/h', icon: '\u{1FAE7}', color: '#e63946' },
             ],
-            funFact: 'A collapsing cavitation bubble approaches the speed of sound in water (5,400 km/h)!'
+            funFact: 'A collapsing cavitation bubble can approach the speed of sound in water — over 5,000 km/h!'
         }
     },
     {
