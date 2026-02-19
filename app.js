@@ -107,6 +107,10 @@
     var appState = State.SPLASH;
     var lastInteraction = Date.now();
     var animTime = 0; // module-scoped animation time for hit detection
+    var streak = 0; // consecutive question pops
+    var unlockedCreatures = {}; // keyed by question ID
+    var creatureFlashText = ''; // "New creature!" text
+    var creatureFlashAlpha = 0;
 
     // =========================================================================
     // God rays
@@ -515,6 +519,452 @@
         }
         ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = prevComp;
+    }
+
+    // =========================================================================
+    // Creature unlocks
+    // =========================================================================
+
+    // Each creature: { draw(time, dt), startTime }
+    var CREATURE_DEFS = {
+        speed: { name: 'Sea Turtle', emoji: '\u{1F422}' },
+        temperature: { name: 'Glowing Jellyfish', emoji: '\u{1FAE7}' },
+        destruction: { name: 'Hammerhead Shark', emoji: '\u{1F988}' },
+        useful: { name: 'Seahorse', emoji: '\u{1F40E}' },
+        where: { name: 'Fish School', emoji: '\u{1F41F}' },
+        shrimp: { name: 'Pistol Shrimp', emoji: '\u{1F990}' },
+    };
+
+    // Sea turtle — glides slowly right-to-left across the upper third
+    function drawSeaTurtle(time, c) {
+        var progress = (time - c.startTime) * 0.015; // slow drift
+        var x = W + 80 - (progress * W * 0.5) % (W + 160);
+        if (x < -80) x += W + 160;
+        var y = H * 0.2 + Math.sin(time * 0.3 + 1.5) * 20;
+        var sz = 28;
+
+        ctx.save();
+        ctx.globalAlpha = 0.7;
+        ctx.translate(x, y);
+
+        // Shell (oval)
+        ctx.beginPath();
+        ctx.ellipse(0, 0, sz, sz * 0.6, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#5a8a4a';
+        ctx.fill();
+        ctx.strokeStyle = '#3d6632';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Shell pattern
+        ctx.beginPath();
+        ctx.ellipse(0, 0, sz * 0.6, sz * 0.35, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(61, 102, 50, 0.5)';
+        ctx.stroke();
+
+        // Head
+        ctx.beginPath();
+        ctx.ellipse(sz + 8, 0, 8, 6, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#7ab867';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sz + 12, -2, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fill();
+
+        // Flippers (animated)
+        var flipAngle = Math.sin(time * 1.5) * 0.3;
+        // Front flippers
+        ctx.save();
+        ctx.translate(sz * 0.4, -sz * 0.5);
+        ctx.rotate(-0.4 + flipAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 16, 5, -0.3, 0, Math.PI * 2);
+        ctx.fillStyle = '#7ab867';
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(sz * 0.4, sz * 0.5);
+        ctx.rotate(0.4 - flipAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 16, 5, 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = '#7ab867';
+        ctx.fill();
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    // Hammerhead — dark silhouette drifting in the far background
+    function drawHammerhead(time, c) {
+        var progress = (time - c.startTime) * 0.01;
+        var x = -60 + (progress * W * 0.4) % (W + 120);
+        var y = H * 0.35 + Math.sin(time * 0.2) * 30;
+        var sz = 40;
+
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.translate(x, y);
+        ctx.scale(-1, 1); // facing left
+
+        // Body
+        ctx.beginPath();
+        ctx.moveTo(sz * 1.2, 0);
+        ctx.quadraticCurveTo(sz * 0.6, -sz * 0.25, -sz * 0.3, -sz * 0.1);
+        ctx.quadraticCurveTo(-sz * 0.6, 0, -sz * 0.3, sz * 0.1);
+        ctx.quadraticCurveTo(sz * 0.6, sz * 0.25, sz * 1.2, 0);
+        ctx.fillStyle = '#1a2a3a';
+        ctx.fill();
+
+        // Hammer head
+        ctx.beginPath();
+        ctx.moveTo(sz * 1.2, 0);
+        ctx.lineTo(sz * 1.4, -sz * 0.35);
+        ctx.quadraticCurveTo(sz * 1.5, -sz * 0.35, sz * 1.5, -sz * 0.2);
+        ctx.lineTo(sz * 1.3, 0);
+        ctx.lineTo(sz * 1.5, sz * 0.2);
+        ctx.quadraticCurveTo(sz * 1.5, sz * 0.35, sz * 1.4, sz * 0.35);
+        ctx.closePath();
+        ctx.fill();
+
+        // Dorsal fin
+        ctx.beginPath();
+        ctx.moveTo(sz * 0.3, -sz * 0.1);
+        ctx.lineTo(sz * 0.5, -sz * 0.5);
+        ctx.lineTo(sz * 0.7, -sz * 0.1);
+        ctx.fill();
+
+        // Tail
+        var tailSwing = Math.sin(time * 2) * 0.2;
+        ctx.save();
+        ctx.translate(-sz * 0.3, 0);
+        ctx.rotate(tailSwing);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-sz * 0.4, -sz * 0.3);
+        ctx.lineTo(-sz * 0.25, 0);
+        ctx.lineTo(-sz * 0.4, sz * 0.25);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    // Seahorse — bobs up from the seaweed, gentle vertical drift
+    function drawSeahorse(time, c) {
+        var entryProgress = Math.min((time - c.startTime) * 0.5, 1);
+        var baseY = H * 0.75 - entryProgress * H * 0.15;
+        var x = W * 0.12 + Math.sin(time * 0.2 + 2) * 8;
+        var y = baseY + Math.sin(time * 0.8) * 6;
+        var sz = 14;
+
+        ctx.save();
+        ctx.globalAlpha = 0.65 * entryProgress;
+        ctx.translate(x, y);
+
+        // Curved body (S-shape via arcs)
+        ctx.beginPath();
+        ctx.moveTo(0, -sz * 1.8);
+        ctx.quadraticCurveTo(sz * 0.8, -sz * 1.2, sz * 0.3, -sz * 0.3);
+        ctx.quadraticCurveTo(-sz * 0.3, sz * 0.4, 0, sz);
+        ctx.quadraticCurveTo(sz * 0.2, sz * 1.3, -sz * 0.1, sz * 1.5);
+        ctx.lineWidth = sz * 0.5;
+        ctx.strokeStyle = '#f4a261';
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Snout
+        ctx.beginPath();
+        ctx.moveTo(0, -sz * 1.8);
+        ctx.lineTo(sz * 0.6, -sz * 2);
+        ctx.lineWidth = sz * 0.2;
+        ctx.strokeStyle = '#e09350';
+        ctx.stroke();
+
+        // Eye
+        ctx.beginPath();
+        ctx.arc(sz * 0.1, -sz * 1.5, 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fill();
+
+        // Dorsal fin (fluttering)
+        var flutter = Math.sin(time * 6) * 0.15;
+        ctx.save();
+        ctx.translate(sz * 0.2, -sz * 0.6);
+        ctx.rotate(flutter);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, sz * 0.5, sz * 0.15, 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(244, 162, 97, 0.5)';
+        ctx.fill();
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    // Fish school — 12 tiny fish in a boid-like flock
+    var schoolFish = [];
+    function initSchoolFish() {
+        schoolFish = [];
+        for (var i = 0; i < 12; i++) {
+            schoolFish.push({
+                ox: (Math.random() - 0.5) * 60, // offset from centre
+                oy: (Math.random() - 0.5) * 40,
+                phase: Math.random() * Math.PI * 2,
+                size: 4 + Math.random() * 3,
+            });
+        }
+    }
+    initSchoolFish();
+
+    function drawFishSchool(time, c) {
+        var progress = (time - c.startTime) * 0.03;
+        // Centre of the school drifts in a figure-8
+        var cx = W * 0.5 + Math.sin(progress * 0.7) * W * 0.25;
+        var cy = H * 0.45 + Math.sin(progress * 0.5) * H * 0.15;
+
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        for (var i = 0; i < schoolFish.length; i++) {
+            var sf = schoolFish[i];
+            var fx = cx + sf.ox + Math.sin(time * 0.8 + sf.phase) * 8;
+            var fy = cy + sf.oy + Math.cos(time * 0.6 + sf.phase) * 5;
+            var dir = Math.cos(progress * 0.7) > 0 ? 1 : -1;
+
+            ctx.save();
+            ctx.translate(fx, fy);
+            ctx.scale(dir, 1);
+            // Tiny fish body
+            ctx.beginPath();
+            ctx.ellipse(0, 0, sf.size, sf.size * 0.45, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#a8dadc';
+            ctx.fill();
+            // Tail
+            var tailSwing = Math.sin(time * 5 + sf.phase) * 0.25;
+            ctx.rotate(tailSwing);
+            ctx.beginPath();
+            ctx.moveTo(-sf.size * 0.8, 0);
+            ctx.lineTo(-sf.size * 1.4, -sf.size * 0.3);
+            ctx.lineTo(-sf.size * 1.4, sf.size * 0.3);
+            ctx.closePath();
+            ctx.fillStyle = '#7ec8c8';
+            ctx.fill();
+            // Eye
+            ctx.beginPath();
+            ctx.arc(sf.size * 0.4, -sf.size * 0.1, 1, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fill();
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+
+    // Pistol shrimp — small crustacean on the seafloor
+    function drawPistolShrimp(time, c) {
+        var entryProgress = Math.min((time - c.startTime) * 0.8, 1);
+        var x = W * 0.85;
+        var y = H - 20 - entryProgress * 10;
+        var sz = 12;
+
+        ctx.save();
+        ctx.globalAlpha = 0.75 * entryProgress;
+        ctx.translate(x, y);
+
+        // Body segments
+        ctx.beginPath();
+        ctx.ellipse(0, 0, sz * 1.5, sz * 0.5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#e07050';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sz * 0.8, -sz * 0.1, sz * 0.5, sz * 0.4, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#d06040';
+        ctx.fill();
+
+        // Big claw (the snapping one!)
+        var snapAngle = Math.sin(time * 0.5) * 0.1; // gentle idle movement
+        ctx.save();
+        ctx.translate(sz * 1.3, -sz * 0.3);
+        ctx.rotate(-0.3 + snapAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, sz * 0.9, sz * 0.35, 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#c85030';
+        ctx.fill();
+        ctx.restore();
+
+        // Small claw
+        ctx.beginPath();
+        ctx.ellipse(sz * 1.2, sz * 0.2, sz * 0.4, sz * 0.2, 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = '#d06040';
+        ctx.fill();
+
+        // Antennae
+        ctx.beginPath();
+        ctx.moveTo(sz * 1.3, -sz * 0.4);
+        var antSway = Math.sin(time * 2) * 3;
+        ctx.quadraticCurveTo(sz * 1.8, -sz * 1.2 + antSway, sz * 2.2, -sz * 0.8 + antSway);
+        ctx.moveTo(sz * 1.3, -sz * 0.3);
+        ctx.quadraticCurveTo(sz * 2, -sz * 1 - antSway, sz * 2.4, -sz * 0.6 - antSway);
+        ctx.strokeStyle = 'rgba(224, 112, 80, 0.6)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        // Eye
+        ctx.beginPath();
+        ctx.arc(sz * 1.1, -sz * 0.25, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fill();
+
+        // Legs
+        for (var i = 0; i < 3; i++) {
+            var lx = -sz * 0.4 + i * sz * 0.5;
+            var legPhase = Math.sin(time * 3 + i * 1.2) * 2;
+            ctx.beginPath();
+            ctx.moveTo(lx, sz * 0.4);
+            ctx.lineTo(lx + legPhase, sz * 0.9);
+            ctx.strokeStyle = 'rgba(208, 96, 64, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    // Glowing jellyfish (temperature reward) — brighter than the background one
+    function drawGlowingJellyfish(time, c) {
+        var entryProgress = Math.min((time - c.startTime) * 0.3, 1);
+        var cx = W * 0.7 + Math.sin(time * 0.05) * W * 0.1;
+        var cy = H * 0.3 + Math.sin(time * 0.04) * H * 0.08;
+        var pulse = 0.85 + 0.15 * Math.sin(time * 2.5);
+        var r = 25 * pulse;
+
+        ctx.save();
+        ctx.globalAlpha = 0.4 * entryProgress;
+        ctx.translate(cx, cy);
+
+        // Glow halo
+        var glow = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.5);
+        glow.addColorStop(0, 'rgba(100, 255, 218, 0.15)');
+        glow.addColorStop(0.5, 'rgba(100, 255, 218, 0.05)');
+        glow.addColorStop(1, 'rgba(100, 255, 218, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(-r * 2.5, -r * 2.5, r * 5, r * 5);
+
+        // Bell
+        ctx.beginPath();
+        for (var a = 0; a <= Math.PI; a += 0.06) {
+            var wobble = Math.sin(a * 4 + time * 2.5) * 1.5;
+            var bx = Math.cos(a + Math.PI) * (r + wobble);
+            var by = Math.sin(a + Math.PI) * (r * 0.65 + wobble * 0.5);
+            if (a === 0) ctx.moveTo(bx, by);
+            else ctx.lineTo(bx, by);
+        }
+        ctx.closePath();
+        var bellGrad = ctx.createRadialGradient(0, -r * 0.3, 0, 0, 0, r);
+        bellGrad.addColorStop(0, 'rgba(150, 255, 230, 0.5)');
+        bellGrad.addColorStop(0.5, 'rgba(100, 255, 218, 0.3)');
+        bellGrad.addColorStop(1, 'rgba(29, 233, 182, 0.1)');
+        ctx.fillStyle = bellGrad;
+        ctx.fill();
+
+        // Tentacles
+        for (var t = 0; t < 4; t++) {
+            var tx = (t / 3 - 0.5) * r * 1.4;
+            ctx.beginPath();
+            ctx.moveTo(tx, r * 0.1);
+            for (var seg = 1; seg <= 6; seg++) {
+                var st = seg / 6;
+                var sway = Math.sin(time * 1.8 + t * 1.3 + seg * 0.5) * (6 * st);
+                ctx.lineTo(tx + sway, r * 0.1 + st * 35);
+            }
+            ctx.strokeStyle = 'rgba(100, 255, 218, 0.2)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    var CREATURE_DRAW = {
+        speed: drawSeaTurtle,
+        temperature: drawGlowingJellyfish,
+        destruction: drawHammerhead,
+        useful: drawSeahorse,
+        where: drawFishSchool,
+        shrimp: drawPistolShrimp,
+    };
+
+    function unlockCreature(questionId) {
+        if (unlockedCreatures[questionId]) return;
+        var def = CREATURE_DEFS[questionId];
+        if (!def) return;
+        unlockedCreatures[questionId] = { startTime: animTime };
+        creatureFlashText = def.emoji + ' ' + def.name + ' discovered!';
+        creatureFlashAlpha = 1;
+    }
+
+    function drawUnlockedCreatures(time) {
+        for (var id in unlockedCreatures) {
+            var drawFn = CREATURE_DRAW[id];
+            if (drawFn) drawFn(time, unlockedCreatures[id]);
+        }
+    }
+
+    function drawCreatureFlash(dt) {
+        if (creatureFlashAlpha <= 0) return;
+        creatureFlashAlpha -= 0.008 * dt;
+        if (creatureFlashAlpha < 0) creatureFlashAlpha = 0;
+
+        ctx.save();
+        ctx.globalAlpha = creatureFlashAlpha;
+        ctx.font = 'bold ' + Math.round(Math.min(W * 0.04, 28)) + 'px sans-serif';
+        ctx.fillStyle = '#7fdbda';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(127, 219, 218, 0.6)';
+        ctx.shadowBlur = 15;
+        // Position above centre
+        var y = H * 0.12;
+        ctx.fillText(creatureFlashText, W / 2, y);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.restore();
+    }
+
+    // =========================================================================
+    // Streak escalation
+    // =========================================================================
+
+    var streakGlowAlpha = 0; // background glow pulse
+
+    function applyStreakEffects(cx, cy) {
+        // Streak 2+: larger burst (handled by modifying burst count)
+        if (streak >= 2) {
+            spawnBurst(cx, cy, false); // double burst
+        }
+        // Streak 3+: background glow pulse
+        if (streak >= 3) {
+            streakGlowAlpha = 0.15;
+        }
+        // Streak 4+: bioluminescence bloom + extra burst
+        if (streak >= 4) {
+            spawnBioluminescence(cx, cy);
+            spawnBurst(cx, cy, true);
+        }
+    }
+
+    function drawStreakGlow(dt) {
+        if (streakGlowAlpha <= 0) return;
+        streakGlowAlpha -= 0.002 * dt;
+        if (streakGlowAlpha < 0) streakGlowAlpha = 0;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = streakGlowAlpha;
+        var glow = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
+        glow.addColorStop(0, 'rgba(127, 219, 218, 0.3)');
+        glow.addColorStop(1, 'rgba(127, 219, 218, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
     }
 
     // =========================================================================
@@ -1277,6 +1727,10 @@
         if (idleWarningEl) idleWarningEl.classList.add('hidden');
         questionCooldowns = {};
         pendingRespawnIds = [];
+        streak = 0;
+        unlockedCreatures = {};
+        creatureFlashAlpha = 0;
+        streakGlowAlpha = 0;
         // Cancel any in-flight respawn timers
         for (var i = 0; i < respawnTimerIds.length; i++) {
             clearTimeout(respawnTimerIds[i]);
@@ -1342,6 +1796,9 @@
                         audioManager.playPop(false);
                         spawnBurst(bubble.x, bubble.y, false);
                         startleFish(bubble.x, bubble.y);
+                        streak++;
+                        applyStreakEffects(bubble.x, bubble.y);
+                        unlockCreature(bubble.questionId);
                         questionCooldowns[bubble.questionId] = Date.now() + QUESTION_COOLDOWN_MS;
                         var poppedId = bubble.questionId;
                         bubble.active = false;
@@ -1640,6 +2097,9 @@
             drawFish(fishes[i], time);
         }
 
+        // Draw unlocked creatures (behind bubbles, after fish)
+        drawUnlockedCreatures(time);
+
         // Draw decorative bubbles
         for (var i = 0; i < decorativeBubbles.length; i++) {
             drawDecorativeBubble(decorativeBubbles[i], time);
@@ -1657,6 +2117,12 @@
 
         // Bioluminescence particles (additive, on top of scene)
         drawBioParticles();
+
+        // Streak glow pulse
+        drawStreakGlow(dt);
+
+        // Creature discovery flash text
+        drawCreatureFlash(dt);
 
         // Grain texture overlay (very last — on top of everything)
         drawGrain();
