@@ -31,8 +31,8 @@
     var DPR_CAP = 1.5;
     var FISH_COUNT = 5;
     var GOD_RAY_COUNT = 4;
-    var PARTICLE_LIFE_FRAMES = 30;
-    var RING_LIFE_FRAMES = 36;
+    var PARTICLE_LIFE_DT = 30;
+    var RING_LIFE_DT = 36;
     var MARINE_SNOW_COUNT = 100;
     var CAUSTIC_COUNT = 25;
     var IDLE_WARNING_MS = 40000; // show warning 5s before reset
@@ -1374,7 +1374,7 @@
                 p.vx = Math.cos(angle) * speed;
                 p.vy = Math.sin(angle) * speed;
                 p.r = mini ? (1 + Math.random() * 2) : (2 + Math.random() * 3);
-                p.maxLife = (mini ? 18 : PARTICLE_LIFE_FRAMES) + Math.random() * 12;
+                p.maxLife = (mini ? 18 : PARTICLE_LIFE_DT) + Math.random() * 12;
                 p.isRing = false;
                 p.teal = Math.random() > 0.6;
                 p.opacity = mini ? 0.5 : 0.8;
@@ -1383,7 +1383,7 @@
                 p.vy = 0;
                 p.r = 0;
                 p.ringR = 0;
-                p.maxLife = (mini ? 20 : RING_LIFE_FRAMES) + Math.random() * 12;
+                p.maxLife = (mini ? 20 : RING_LIFE_DT) + Math.random() * 12;
                 p.isRing = true;
                 p.opacity = mini ? 0.3 : 0.6;
             }
@@ -1478,6 +1478,7 @@
 
         setDroneVolume: function (vol) {
             if (!this.droneGain || !this.ctx) return;
+            this.droneGain.gain.setValueAtTime(this.droneGain.gain.value, this.ctx.currentTime);
             this.droneGain.gain.linearRampToValueAtTime(
                 this.muted ? 0 : vol,
                 this.ctx.currentTime + 0.3
