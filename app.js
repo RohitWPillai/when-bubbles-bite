@@ -893,11 +893,13 @@
         shrimp: drawPistolShrimp,
     };
 
+    var discoveredCreatures = {}; // tracks which creatures the user has "found" via question pops
+
     function unlockCreature(questionId) {
-        if (unlockedCreatures[questionId]) return;
+        if (discoveredCreatures[questionId]) return;
         var def = CREATURE_DEFS[questionId];
         if (!def) return;
-        unlockedCreatures[questionId] = { startTime: animTime };
+        discoveredCreatures[questionId] = true;
         creatureFlashText = def.emoji + ' ' + def.name + ' discovered!';
         creatureFlashAlpha = 1;
     }
@@ -1729,6 +1731,7 @@
         pendingRespawnIds = [];
         streak = 0;
         unlockedCreatures = {};
+        discoveredCreatures = {};
         creatureFlashAlpha = 0;
         streakGlowAlpha = 0;
         // Cancel any in-flight respawn timers
@@ -1743,6 +1746,14 @@
         answerAnimTimerIds = [];
     }
 
+    function spawnAllCreatures() {
+        var ids = ['speed', 'temperature', 'destruction', 'useful', 'where', 'shrimp'];
+        for (var i = 0; i < ids.length; i++) {
+            // Stagger start times so entry animations don't all fire at once
+            unlockedCreatures[ids[i]] = { startTime: animTime - i * 0.5 };
+        }
+    }
+
     function hideSplash() {
         audioManager.init();
         audioManager.startDrone();
@@ -1750,6 +1761,7 @@
         appState = State.BUBBLES;
         lastInteraction = Date.now();
         initQuestionBubbles();
+        spawnAllCreatures();
     }
 
     splashEl.addEventListener('pointerdown', function (e) {
