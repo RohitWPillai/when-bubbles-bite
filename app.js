@@ -539,17 +539,19 @@
 
     // Sea turtle — glides left across the upper third, anatomically correct
     function drawSeaTurtle(time, c) {
-        // Smooth ping-pong traversal (no teleport on modulo reset)
-        var period = 40; // seconds for a full crossing
+        // Smooth ping-pong traversal (triangle wave — no teleport)
+        var period = 40; // seconds for a full round trip
         var phase = ((time - c.startTime) % period) / period;
-        var x = (1 - phase) * (W + 120) - 60; // right-to-left
+        var tri = Math.abs(2 * phase - 1); // 0→1→0 triangle wave
+        var x = -60 + tri * (W + 120); // ping-pong across screen
         var y = H * 0.2 + Math.sin(time * 0.3 + 1.5) * 20;
         var sz = 28;
 
         ctx.save();
         ctx.globalAlpha = 0.7;
         ctx.translate(x, y);
-        ctx.scale(-1, 1); // face left (direction of travel)
+        // Face direction of travel: left when phase < 0.5, right when > 0.5
+        if (phase < 0.5) ctx.scale(-1, 1);
 
         // Shell (teardrop/heart shape — tapered rear)
         ctx.beginPath();
@@ -639,15 +641,18 @@
 
     // Hammerhead — dark silhouette drifting in the far background
     function drawHammerhead(time, c) {
-        var progress = (time - c.startTime) * 0.01;
-        var x = -60 + (progress * W * 0.4) % (W + 120);
+        var period = 60; // seconds for a full round trip
+        var phase = ((time - c.startTime) % period) / period;
+        var tri = Math.abs(2 * phase - 1); // 0→1→0 triangle wave
+        var x = -60 + tri * (W + 120);
         var y = H * 0.35 + Math.sin(time * 0.2) * 30;
         var sz = 40;
 
         ctx.save();
         ctx.globalAlpha = 0.15;
         ctx.translate(x, y);
-        ctx.scale(-1, 1); // facing left
+        // Face direction of travel
+        if (phase < 0.5) ctx.scale(-1, 1);
 
         // Body
         ctx.beginPath();
@@ -1289,7 +1294,7 @@
     }
 
     function createQuestionBubble(question, x) {
-        var r = 55 + Math.random() * 15;
+        var r = 60 + Math.random() * 12; // min 120px diameter for child fingers
         return {
             active: true,
             questionId: question.id,
@@ -1564,6 +1569,7 @@
     var contentEl = document.getElementById('answer-content');
     var dismissBtn = document.getElementById('dismiss-btn');
     var answerAnimTimerIds = []; // tracked animation setTimeouts for answer overlays
+    var squeezeTimerIds = []; // separate from answer timers to avoid orphaned squeeze states
 
     var lastPopX = 0.5; // fractional position for radial reveal
     var lastPopY = 0.5;
@@ -1778,6 +1784,10 @@
             clearTimeout(answerAnimTimerIds[i]);
         }
         answerAnimTimerIds = [];
+        for (var i = 0; i < squeezeTimerIds.length; i++) {
+            clearTimeout(squeezeTimerIds[i]);
+        }
+        squeezeTimerIds = [];
         drainPendingRespawns();
     }
 
@@ -1839,6 +1849,10 @@
             clearTimeout(answerAnimTimerIds[i]);
         }
         answerAnimTimerIds = [];
+        for (var i = 0; i < squeezeTimerIds.length; i++) {
+            clearTimeout(squeezeTimerIds[i]);
+        }
+        squeezeTimerIds = [];
     }
 
     function spawnAllCreatures() {
@@ -1898,7 +1912,7 @@
                 qb.popPhase = 'squeeze';
                 qb.squeezeStart = performance.now();
                 (function (bubble) {
-                    answerAnimTimerIds.push(setTimeout(function () {
+                    var squeezeTimer = setTimeout(function () {
                         if (!bubble.active && bubble.popPhase !== 'squeeze') return;
                         audioManager.playPop(false);
                         spawnBurst(bubble.x, bubble.y, false);
@@ -1924,7 +1938,8 @@
                             }, 2000);
                             respawnTimerIds.push(tid);
                         })(poppedId);
-                    }, 80));
+                    }, 80);
+                    squeezeTimerIds.push(squeezeTimer);
                 })(qb);
                 return;
             }
