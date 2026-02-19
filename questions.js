@@ -90,7 +90,7 @@ window.QUESTIONS = [
                 { icon: '\u{1F525}', value: '4,700\u{00B0}C', label: 'hot' },
                 { icon: '\u{1F50A}', value: '218 dB', label: 'loud' },
             ],
-            comparison: 'Snaps its claw so fast it creates a cavitation bubble, a shock wave, and a flash of light!'
+            comparison: 'Snaps its claw so fast it creates a cavitation bubble, a shock wave, and a flash of light called sonoluminescence!'
         }
     }
 ];
