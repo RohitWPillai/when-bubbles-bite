@@ -36,6 +36,9 @@
     var MARINE_SNOW_COUNT = 100;
     var CAUSTIC_COUNT = 25;
     var IDLE_WARNING_MS = 40000; // show warning 5s before reset
+    var SEAWEED_COUNT = 6;
+    var SEAWEED_SEGMENTS = 10;
+    var BIOLUM_PARTICLE_COUNT = 40;
 
     // Fish colour schemes (Nemo wink but distinct)
     var FISH_PALETTES = [
@@ -90,6 +93,8 @@
                 qb.y = Math.min(qb.y, H + qb.r);
             }
         }
+        initSeaweed();
+        initJellyfish();
     });
 
     resizeCanvas();
@@ -247,6 +252,266 @@
             var sprite = causticSprites[c.sprite];
             ctx.globalAlpha = c.baseAlpha * pulse;
             ctx.drawImage(sprite, (cx - sprite.width / 2) | 0, (cy - sprite.height / 2) | 0);
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = prevComp;
+    }
+
+    // =========================================================================
+    // Seaweed silhouettes
+    // =========================================================================
+
+    var seaweeds = [];
+    function initSeaweed() {
+        seaweeds = [];
+        for (var i = 0; i < SEAWEED_COUNT; i++) {
+            seaweeds.push({
+                xFrac: 0.05 + (i / (SEAWEED_COUNT - 1)) * 0.9 + (Math.random() - 0.5) * 0.08,
+                baseHeight: 80 + Math.random() * 60,
+                segments: SEAWEED_SEGMENTS,
+                swayFreq: 0.4 + Math.random() * 0.3,
+                swayFreq2: 0.17 + Math.random() * 0.1, // second frequency to avoid mechanical look
+                swayAmp: 4 + Math.random() * 4,
+                phase: Math.random() * Math.PI * 2,
+                baseWidth: 5 + Math.random() * 2,
+                color: 'rgba(' + (10 + Math.floor(Math.random() * 15)) + ',' +
+                       (40 + Math.floor(Math.random() * 20)) + ',' +
+                       (35 + Math.floor(Math.random() * 15)) + ',',
+            });
+        }
+    }
+    initSeaweed();
+
+    function drawSeaweed(time) {
+        for (var s = 0; s < seaweeds.length; s++) {
+            var sw = seaweeds[s];
+            var baseX = sw.xFrac * W;
+            var baseY = H;
+            var segLen = sw.baseHeight / sw.segments;
+
+            ctx.beginPath();
+            ctx.moveTo(baseX, baseY);
+
+            var prevX = baseX;
+            var prevY = baseY;
+            for (var i = 1; i <= sw.segments; i++) {
+                var t = i / sw.segments; // 0→1 from base to tip
+                var sway = Math.sin(time * sw.swayFreq + sw.phase + i * 0.4) * sw.swayAmp * t;
+                sway += Math.sin(time * sw.swayFreq2 + sw.phase * 1.7 + i * 0.3) * sw.swayAmp * 0.5 * t;
+                var nx = baseX + sway;
+                var ny = baseY - i * segLen;
+                var mx = (prevX + nx) / 2;
+                var my = (prevY + ny) / 2;
+                ctx.quadraticCurveTo(prevX, prevY, mx, my);
+                prevX = nx;
+                prevY = ny;
+            }
+
+            var tipWidth = 1;
+            ctx.lineWidth = sw.baseWidth;
+            ctx.strokeStyle = sw.color + '0.8)';
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Draw again thinner for depth
+            ctx.beginPath();
+            ctx.moveTo(baseX, baseY);
+            prevX = baseX;
+            prevY = baseY;
+            for (var i = 1; i <= sw.segments; i++) {
+                var t = i / sw.segments;
+                var sway = Math.sin(time * sw.swayFreq + sw.phase + i * 0.4) * sw.swayAmp * t;
+                sway += Math.sin(time * sw.swayFreq2 + sw.phase * 1.7 + i * 0.3) * sw.swayAmp * 0.5 * t;
+                var nx = baseX + sway;
+                var ny = baseY - i * segLen;
+                var mx = (prevX + nx) / 2;
+                var my = (prevY + ny) / 2;
+                ctx.quadraticCurveTo(prevX, prevY, mx, my);
+                prevX = nx;
+                prevY = ny;
+            }
+            ctx.lineWidth = sw.baseWidth * 0.5;
+            ctx.strokeStyle = sw.color + '0.4)';
+            ctx.stroke();
+        }
+    }
+
+    // =========================================================================
+    // Jellyfish
+    // =========================================================================
+
+    var jellyfish = {
+        x: 0, y: 0,
+        lissA: 0.15, lissB: 0.1, // Lissajous frequencies
+        lissAmpX: 0, lissAmpY: 0,
+        bellRadius: 35,
+        pulsePhase: 0,
+        tentacles: 5,
+        opacity: 0.2,
+    };
+
+    function initJellyfish() {
+        jellyfish.x = W * (0.3 + Math.random() * 0.4);
+        jellyfish.y = H * (0.25 + Math.random() * 0.3);
+        jellyfish.lissAmpX = W * 0.15;
+        jellyfish.lissAmpY = H * 0.1;
+        jellyfish.lissA = 0.03 + Math.random() * 0.02;
+        jellyfish.lissB = 0.019 + Math.random() * 0.01;
+    }
+    initJellyfish();
+
+    function drawJellyfish(time) {
+        var jf = jellyfish;
+        var cx = jf.x + Math.sin(time * jf.lissA) * jf.lissAmpX;
+        var cy = jf.y + Math.sin(time * jf.lissB) * jf.lissAmpY;
+        var pulse = 0.85 + 0.15 * Math.sin(time * 2.1);
+        var r = jf.bellRadius * pulse;
+
+        ctx.save();
+        ctx.globalAlpha = jf.opacity;
+        ctx.translate(cx, cy);
+
+        // Bell (deformed semicircle)
+        ctx.beginPath();
+        for (var a = 0; a <= Math.PI; a += 0.05) {
+            var wobble = Math.sin(a * 3 + time * 2) * 2;
+            var bx = Math.cos(a + Math.PI) * (r + wobble);
+            var by = Math.sin(a + Math.PI) * (r * 0.7 + wobble * 0.5);
+            if (a === 0) ctx.moveTo(bx, by);
+            else ctx.lineTo(bx, by);
+        }
+        ctx.closePath();
+        var bellGrad = ctx.createRadialGradient(0, -r * 0.3, 0, 0, 0, r);
+        bellGrad.addColorStop(0, 'rgba(180, 200, 240, 0.4)');
+        bellGrad.addColorStop(0.5, 'rgba(200, 160, 220, 0.25)');
+        bellGrad.addColorStop(1, 'rgba(160, 140, 200, 0.1)');
+        ctx.fillStyle = bellGrad;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(200, 220, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Tentacles
+        var bellBottom = r * 0.1; // bottom of bell
+        for (var t = 0; t < jf.tentacles; t++) {
+            var tx = (t / (jf.tentacles - 1) - 0.5) * r * 1.6;
+            ctx.beginPath();
+            ctx.moveTo(tx, bellBottom);
+            var tentLen = 50 + Math.sin(time * 0.7 + t) * 10;
+            for (var seg = 1; seg <= 8; seg++) {
+                var st = seg / 8;
+                var sway = Math.sin(time * 1.5 + t * 1.2 + seg * 0.6) * (8 * st);
+                ctx.lineTo(tx + sway, bellBottom + st * tentLen);
+            }
+            ctx.strokeStyle = 'rgba(180, 160, 220, ' + (0.15 * (1 - 0.5 * (Math.abs(t - 2) / 2))) + ')';
+            ctx.lineWidth = 2 - (1.5 * (Math.abs(t - 2) / (jf.tentacles - 1)));
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    // =========================================================================
+    // Grain texture overlay
+    // =========================================================================
+
+    var grainCanvas = document.createElement('canvas');
+    (function initGrain() {
+        var sz = 256;
+        grainCanvas.width = sz;
+        grainCanvas.height = sz;
+        var gctx = grainCanvas.getContext('2d');
+        var imgData = gctx.createImageData(sz, sz);
+        var d = imgData.data;
+        for (var i = 0; i < d.length; i += 4) {
+            var v = Math.floor(Math.random() * 256);
+            d[i] = v; d[i + 1] = v; d[i + 2] = v; d[i + 3] = 255;
+        }
+        gctx.putImageData(imgData, 0, 0);
+    })();
+
+    function drawGrain() {
+        ctx.globalAlpha = 0.025;
+        // Tile the grain across the screen
+        var pat = ctx.createPattern(grainCanvas, 'repeat');
+        ctx.fillStyle = pat;
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 1;
+    }
+
+    // =========================================================================
+    // Bioluminescence burst
+    // =========================================================================
+
+    var bioParticles = [];
+    for (var i = 0; i < BIOLUM_PARTICLE_COUNT; i++) {
+        bioParticles.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, size: 0, colorIdx: 0 });
+    }
+
+    var BIOLUM_COLORS = [
+        'rgba(255, 255, 255, ',  // core flash
+        'rgba(180, 248, 255, ',  // pale cyan
+        'rgba(100, 255, 218, ',  // mint
+        'rgba(29, 233, 182, ',   // teal-green
+        'rgba(0, 121, 107, ',    // dark teal
+    ];
+
+    function spawnBioluminescence(cx, cy) {
+        var spawned = 0;
+        for (var i = 0; i < bioParticles.length && spawned < BIOLUM_PARTICLE_COUNT; i++) {
+            if (bioParticles[i].active) continue;
+            var p = bioParticles[i];
+            p.active = true;
+            p.x = cx;
+            p.y = cy;
+            var angle = Math.random() * Math.PI * 2;
+            var speed = 1.5 + Math.random() * 4;
+            p.vx = Math.cos(angle) * speed;
+            p.vy = Math.sin(angle) * speed;
+            p.life = 0;
+            p.maxLife = 40 + Math.random() * 30;
+            p.size = 2 + Math.random() * 4;
+            p.colorIdx = Math.floor(Math.random() * BIOLUM_COLORS.length);
+            spawned++;
+        }
+    }
+
+    function updateBioParticles(dt) {
+        var drag = Math.pow(0.96, dt);
+        for (var i = 0; i < bioParticles.length; i++) {
+            var p = bioParticles[i];
+            if (!p.active) continue;
+            p.life += dt;
+            if (p.life >= p.maxLife) { p.active = false; continue; }
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vx *= drag;
+            p.vy *= drag;
+        }
+    }
+
+    function drawBioParticles() {
+        var prevComp = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = 'lighter';
+        for (var i = 0; i < bioParticles.length; i++) {
+            var p = bioParticles[i];
+            if (!p.active) continue;
+            var progress = p.life / p.maxLife;
+            var alpha = (1 - progress) * 0.7;
+            if (alpha < 0.01) continue;
+            var col = BIOLUM_COLORS[p.colorIdx];
+            // Glow halo (larger, dimmer)
+            ctx.globalAlpha = alpha * 0.3;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 2.5 * (1 - progress * 0.3), 0, Math.PI * 2);
+            ctx.fillStyle = col + '1)';
+            ctx.fill();
+            // Bright core (smaller, brighter)
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * (1 - progress * 0.5), 0, Math.PI * 2);
+            ctx.fillStyle = col + '1)';
+            ctx.fill();
         }
         ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = prevComp;
@@ -636,6 +901,66 @@
             }
         },
 
+        // Ambient underwater drone — two detuned triangle oscillators
+        droneGain: null,
+        droneStarted: false,
+
+        startDrone: function () {
+            if (this.droneStarted || !this.ctx) return;
+            this.droneStarted = true;
+            var actx = this.ctx;
+            var dest = this.masterOut;
+            this.droneGain = actx.createGain();
+            this.droneGain.gain.value = 0;
+            this.droneGain.connect(dest);
+
+            var osc1 = actx.createOscillator();
+            osc1.type = 'triangle';
+            osc1.frequency.value = 50;
+            osc1.connect(this.droneGain);
+            osc1.start();
+
+            var osc2 = actx.createOscillator();
+            osc2.type = 'triangle';
+            osc2.frequency.value = 55;
+            osc2.connect(this.droneGain);
+            osc2.start();
+
+            // Fade in over 2 seconds
+            this.droneGain.gain.linearRampToValueAtTime(0.06, actx.currentTime + 2);
+        },
+
+        setDroneVolume: function (vol) {
+            if (!this.droneGain || !this.ctx) return;
+            this.droneGain.gain.linearRampToValueAtTime(
+                this.muted ? 0 : vol,
+                this.ctx.currentTime + 0.3
+            );
+        },
+
+        // Discovery chime — C5 → E5 → G5 ascending sines
+        playChime: function () {
+            if (this.muted || !this.ctx) return;
+            var actx = this.ctx;
+            var dest = this.masterOut;
+            var now = actx.currentTime;
+            var notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+            for (var i = 0; i < notes.length; i++) {
+                var osc = actx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = notes[i];
+                var g = actx.createGain();
+                var onset = now + i * 0.12;
+                g.gain.setValueAtTime(0, onset);
+                g.gain.linearRampToValueAtTime(0.15, onset + 0.04);
+                g.gain.exponentialRampToValueAtTime(0.001, onset + 0.4);
+                osc.connect(g);
+                g.connect(dest);
+                osc.start(onset);
+                osc.stop(onset + 0.45);
+            }
+        },
+
         playPop: function (mini) {
             if (this.muted || !this.ctx || !this.noiseBuffer) return;
             var actx = this.ctx;
@@ -681,6 +1006,7 @@
         lastInteraction = Date.now();
         audioManager.muted = !audioManager.muted;
         muteIcon.textContent = audioManager.muted ? '\u{1F507}' : '\u{1F50A}';
+        audioManager.setDroneVolume(audioManager.muted ? 0 : 0.06);
     });
 
     // =========================================================================
@@ -711,6 +1037,14 @@
             case 'big-reveal': renderBigReveal(question.answer, questionId); break;
             case 'text-fact': renderTextFact(question.answer); break;
             case 'icon-grid': renderIconGrid(question.answer); break;
+        }
+
+        // Discovery chime on every answer reveal
+        audioManager.playChime();
+
+        // Bioluminescence burst on dramatic answers
+        if (questionId === 'temperature' || questionId === 'speed' || questionId === 'shrimp') {
+            spawnBioluminescence(lastPopX * W, lastPopY * H);
         }
 
         // Radial reveal from pop position
@@ -936,6 +1270,7 @@
 
     function showSplash() {
         appState = State.SPLASH;
+        audioManager.setDroneVolume(0);
         splashEl.classList.remove('hidden');
         overlayEl.classList.add('hidden');
         idleWarningShown = false;
@@ -956,6 +1291,7 @@
 
     function hideSplash() {
         audioManager.init();
+        audioManager.startDrone();
         splashEl.classList.add('hidden');
         appState = State.BUBBLES;
         lastInteraction = Date.now();
@@ -1283,10 +1619,17 @@
         // Marine snow (ambient particles, behind fish)
         drawMarineSnow(time);
 
+        // Seaweed silhouettes (rooted at bottom, behind fish)
+        drawSeaweed(time);
+
+        // Jellyfish (drifting background creature, behind fish)
+        drawJellyfish(time);
+
         // Update
         updateDecorativeBubbles(dt);
         updateMarineSnow(dt);
         updateFish(dt);
+        updateBioParticles(dt);
         if (appState === State.BUBBLES || appState === State.ANSWER) {
             updateQuestionBubbles(dt);
         }
@@ -1312,6 +1655,12 @@
         // Draw particles (on top)
         drawParticles();
 
+        // Bioluminescence particles (additive, on top of scene)
+        drawBioParticles();
+
+        // Grain texture overlay (very last — on top of everything)
+        drawGrain();
+
         checkIdle();
         rafId = requestAnimationFrame(gameLoop);
     }
@@ -1324,10 +1673,14 @@
         if (document.hidden) {
             running = false;
             cancelAnimationFrame(rafId);
+            audioManager.setDroneVolume(0);
         } else {
             running = true;
             lastTime = 0;
             rafId = requestAnimationFrame(gameLoop);
+            if (appState !== State.SPLASH) {
+                audioManager.setDroneVolume(0.06);
+            }
         }
     });
 
