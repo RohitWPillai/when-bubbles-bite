@@ -553,6 +553,7 @@
     var overlayEl = document.getElementById('answer-overlay');
     var contentEl = document.getElementById('answer-content');
     var dismissBtn = document.getElementById('dismiss-btn');
+    var answerAnimTimerIds = []; // tracked animation setTimeouts for answer overlays
 
     function showAnswer(questionId) {
         var question = null;
@@ -598,12 +599,12 @@
         var fills = contentEl.querySelectorAll('.bar-fill');
         for (var i = 0; i < fills.length; i++) {
             (function (fill, delay) {
-                setTimeout(function () { fill.style.width = fill.getAttribute('data-width'); }, delay);
+                answerAnimTimerIds.push(setTimeout(function () { fill.style.width = fill.getAttribute('data-width'); }, delay));
             })(fills[i], 250 * i + 100);
         }
         var funFact = contentEl.querySelector('.bar-fun-fact');
         if (funFact) {
-            setTimeout(function () { funFact.classList.add('visible'); }, 250 * data.bars.length + 600);
+            answerAnimTimerIds.push(setTimeout(function () { funFact.classList.add('visible'); }, 250 * data.bars.length + 600));
         }
     }
 
@@ -640,7 +641,7 @@
         var badges = contentEl.querySelectorAll('.badge');
         for (var i = 0; i < badges.length; i++) {
             (function (badge, delay) {
-                setTimeout(function () { badge.classList.add('visible'); }, delay);
+                answerAnimTimerIds.push(setTimeout(function () { badge.classList.add('visible'); }, delay));
             })(badges[i], 150 * i + 800);
         }
     }
@@ -660,7 +661,7 @@
         var items = contentEl.querySelectorAll('.text-fact-item');
         for (var i = 0; i < items.length; i++) {
             (function (item, delay) {
-                setTimeout(function () { item.classList.add('visible'); }, delay);
+                answerAnimTimerIds.push(setTimeout(function () { item.classList.add('visible'); }, delay));
             })(items[i], 300 * i + 100);
         }
     }
@@ -682,7 +683,7 @@
         var cells = contentEl.querySelectorAll('.icon-grid-cell');
         for (var i = 0; i < cells.length; i++) {
             (function (cell, delay) {
-                setTimeout(function () { cell.classList.add('visible'); }, delay);
+                answerAnimTimerIds.push(setTimeout(function () { cell.classList.add('visible'); }, delay));
             })(cells[i], 200 * i + 100);
         }
     }
@@ -691,6 +692,11 @@
         overlayEl.classList.add('hidden');
         appState = State.BUBBLES;
         lastInteraction = Date.now();
+        // Cancel in-flight answer animation timers
+        for (var i = 0; i < answerAnimTimerIds.length; i++) {
+            clearTimeout(answerAnimTimerIds[i]);
+        }
+        answerAnimTimerIds = [];
         drainPendingRespawns();
     }
 
@@ -730,6 +736,11 @@
             clearTimeout(respawnTimerIds[i]);
         }
         respawnTimerIds = [];
+        // Cancel any in-flight answer animation timers
+        for (var i = 0; i < answerAnimTimerIds.length; i++) {
+            clearTimeout(answerAnimTimerIds[i]);
+        }
+        answerAnimTimerIds = [];
     }
 
     function hideSplash() {
@@ -1062,6 +1073,7 @@
     document.addEventListener('visibilitychange', function () {
         if (document.hidden) {
             running = false;
+            cancelAnimationFrame(rafId);
         } else {
             running = true;
             lastTime = 0;
