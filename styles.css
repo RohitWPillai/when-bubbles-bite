@@ -111,7 +111,6 @@ html, body {
     transition: clip-path 0.4s ease-out, opacity 0.3s ease;
     padding: 2rem;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
 #answer-overlay.hidden {
@@ -453,7 +452,7 @@ html, body {
     white-space: nowrap;
     animation: idle-pulse 1s ease-in-out infinite;
     transition: opacity 0.3s ease;
-    pointer-events: none;
+    cursor: pointer;
 }
 
 #idle-warning.hidden {
