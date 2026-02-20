@@ -351,6 +351,10 @@
         pulsePhase: 0,
         tentacles: 5,
         opacity: 0.2,
+        // Propulsion state
+        propCycle: 0,        // 0-1 cycle phase
+        propVy: 0,           // vertical velocity from propulsion
+        propYOffset: 0,      // accumulated vertical offset
     };
 
     function initJellyfish() {
@@ -365,22 +369,44 @@
 
     function drawJellyfish(time) {
         var jf = jellyfish;
+
+        // Propulsion cycle: contract → impulse up → drift down → repeat
+        var propPeriod = 3.5; // seconds per cycle
+        jf.propCycle = (time % propPeriod) / propPeriod;
+        var contractPhase = jf.propCycle;
+        // Contraction in first 30% of cycle, relaxation in remaining 70%
+        var contraction;
+        if (contractPhase < 0.3) {
+            contraction = Math.sin(contractPhase / 0.3 * Math.PI); // 0→1→0 during contraction
+        } else {
+            contraction = 0;
+        }
+        // Vertical impulse: upward push during contraction peak
+        var impulse = contractPhase < 0.15 ? 0 : (contractPhase < 0.3 ? -1.2 * contraction : 0.3);
+        jf.propVy = jf.propVy * 0.95 + impulse * 0.5;
+        jf.propYOffset += jf.propVy * 0.016; // ~60fps dt
+        // Clamp drift so it doesn't wander too far
+        if (Math.abs(jf.propYOffset) > 30) jf.propYOffset *= 0.98;
+
         var cx = jf.x + Math.sin(time * jf.lissA) * jf.lissAmpX;
-        var cy = jf.y + Math.sin(time * jf.lissB) * jf.lissAmpY;
-        var pulse = 0.85 + 0.15 * Math.sin(time * 2.1);
-        var r = jf.bellRadius * pulse;
+        var cy = jf.y + Math.sin(time * jf.lissB) * jf.lissAmpY + jf.propYOffset;
+
+        // Bell shape reacts to propulsion
+        var bellSquash = 1 - contraction * 0.25; // flatter when contracting
+        var bellStretch = 1 + contraction * 0.15; // wider when contracting
+        var r = jf.bellRadius * (0.85 + 0.15 * Math.sin(time * 2.1));
 
         ctx.save();
         ctx.globalAlpha = jf.opacity;
         ctx.translate(cx, cy);
 
-        // Bell (dome curves upward, opens downward)
+        // Bell
         ctx.beginPath();
         var first = true;
         for (var a = 0; a <= Math.PI; a += 0.05) {
             var wobble = Math.sin(a * 3 + time * 2) * 2;
-            var bx = Math.cos(a) * (r + wobble); // left-to-right across top
-            var by = -Math.sin(a) * (r * 0.7 + wobble * 0.5); // dome goes upward (negative y)
+            var bx = Math.cos(a) * (r * bellStretch + wobble);
+            var by = -Math.sin(a) * (r * 0.7 * bellSquash + wobble * 0.5);
             if (first) { ctx.moveTo(bx, by); first = false; }
             else ctx.lineTo(bx, by);
         }
@@ -395,17 +421,23 @@
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Tentacles
-        var bellBottom = r * 0.1; // bottom of bell (where it opens)
+        // Tentacles — quadratic bezier curves with independent phase-offset sway
+        var bellBottom = r * 0.1;
         for (var t = 0; t < jf.tentacles; t++) {
-            var tx = (t / (jf.tentacles - 1) - 0.5) * r * 1.6;
+            var tx = (t / (jf.tentacles - 1) - 0.5) * r * 1.6 * bellStretch;
+            var tentLen = 50 + Math.sin(time * 0.7 + t) * 10;
+            // Tentacles trail more during upward movement (contraction)
+            var trailBias = contraction * 6;
             ctx.beginPath();
             ctx.moveTo(tx, bellBottom);
-            var tentLen = 50 + Math.sin(time * 0.7 + t) * 10;
-            for (var seg = 1; seg <= 8; seg++) {
-                var st = seg / 8;
-                var sway = Math.sin(time * 1.5 + t * 1.2 + seg * 0.6) * (8 * st);
-                ctx.lineTo(tx + sway, bellBottom + st * tentLen);
+            for (var seg = 1; seg <= 4; seg++) {
+                var st = seg / 4;
+                var sway = Math.sin(time * 1.5 + t * 1.2 + seg * 0.8) * (10 * st) + trailBias * st;
+                var cpx = tx + sway * 0.6 + Math.sin(time * 0.9 + t * 2.1 + seg) * 4;
+                var cpy = bellBottom + (st - 0.12) * tentLen;
+                var ex = tx + sway;
+                var ey = bellBottom + st * tentLen;
+                ctx.quadraticCurveTo(cpx, cpy, ex, ey);
             }
             ctx.strokeStyle = 'rgba(180, 160, 220, ' + (0.15 * (1 - 0.5 * (Math.abs(t - 2) / 2))) + ')';
             ctx.lineWidth = 2 - (1.5 * (Math.abs(t - 2) / (jf.tentacles - 1)));
@@ -536,21 +568,31 @@
         shrimp: { name: 'Pistol Shrimp', emoji: '\u{1F990}' },
     };
 
-    // Sea turtle — glides left across the upper third, anatomically correct
+    // Sea turtle — glide dynamics with stroke/glide phases + body tilt
     function drawSeaTurtle(time, c) {
-        // Smooth ping-pong traversal (triangle wave — no teleport)
-        var period = 40; // seconds for a full round trip
+        var period = 40;
         var phase = ((time - c.startTime) % period) / period;
-        var tri = Math.abs(2 * phase - 1); // 0→1→0 triangle wave
-        var x = -60 + tri * (W + 120); // ping-pong across screen
-        var y = H * 0.2 + Math.sin(time * 0.3 + 1.5) * 20;
+        var tri = Math.abs(2 * phase - 1);
+        var x = -60 + tri * (W + 120) + (c.nudgeX || 0);
+        var y = H * 0.2 + Math.sin(time * 0.3 + 1.5) * 20 + (c.nudgeY || 0);
         var sz = 28;
+
+        // Stroke/glide cycle: 2.5s stroke, 2s glide
+        var swimCycle = (time % 4.5) / 4.5;
+        var isStroking = swimCycle < 0.55;
+        // Smooth stroke intensity (ramps up and down during stroke phase)
+        var strokeIntensity = isStroking ? Math.sin(swimCycle / 0.55 * Math.PI) : 0;
+        // Glide tuck factor (flippers fold during glide)
+        var glideTuck = isStroking ? 0 : Math.sin((swimCycle - 0.55) / 0.45 * Math.PI) * 0.5;
+
+        // Body tilt: nose-up during upstroke, level during glide
+        var bodyTilt = strokeIntensity * Math.sin(time * 2.5) * 0.08;
 
         ctx.save();
         ctx.globalAlpha = 0.7;
         ctx.translate(x, y);
-        // Face direction of travel: left when phase < 0.5, right when > 0.5
         if (phase < 0.5) ctx.scale(-1, 1);
+        ctx.rotate(bodyTilt); // subtle body tilt
 
         // Shell (teardrop/heart shape — tapered rear)
         ctx.beginPath();
@@ -566,7 +608,7 @@
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Shell scute pattern (central ridge + lateral lines)
+        // Shell scute pattern
         ctx.beginPath();
         ctx.moveTo(sz * 0.9, 0);
         ctx.lineTo(-sz * 0.6, 0);
@@ -578,7 +620,7 @@
         ctx.lineWidth = 0.8;
         ctx.stroke();
 
-        // Head (larger, ~1/3 shell width)
+        // Head
         ctx.beginPath();
         ctx.ellipse(sz * 1.15, 0, sz * 0.32, sz * 0.25, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#7ab867';
@@ -588,40 +630,45 @@
         ctx.fillStyle = '#1a1a2e';
         ctx.fill();
 
-        // Front flippers — synchronous "flying" stroke
-        var flipAngle = Math.sin(time * 2.5) * 0.4; // ~0.4 Hz
+        // Front flippers — phase-offset pair (front-left with back-right like real turtles)
+        // During stroke: active paddling; during glide: tucked position
+        var flipBase = isStroking ? Math.sin(time * 2.5) * 0.4 * strokeIntensity : -0.15 * glideTuck;
+        // Front-left flipper
         ctx.save();
         ctx.translate(sz * 0.5, -sz * 0.45);
-        ctx.rotate(-0.5 + flipAngle);
+        ctx.rotate(-0.5 + flipBase);
         ctx.beginPath();
-        ctx.ellipse(8, 0, 18, 4.5, -0.2, 0, Math.PI * 2);
+        ctx.ellipse(8, 0, 18 - glideTuck * 4, 4.5, -0.2, 0, Math.PI * 2);
         ctx.fillStyle = '#7ab867';
         ctx.fill();
         ctx.restore();
+        // Front-right flipper (opposite phase)
+        var flipOpp = isStroking ? Math.sin(time * 2.5 + Math.PI) * 0.35 * strokeIntensity : -0.15 * glideTuck;
         ctx.save();
         ctx.translate(sz * 0.5, sz * 0.45);
-        ctx.rotate(0.5 - flipAngle);
+        ctx.rotate(0.5 - flipOpp);
         ctx.beginPath();
-        ctx.ellipse(8, 0, 18, 4.5, 0.2, 0, Math.PI * 2);
+        ctx.ellipse(8, 0, 18 - glideTuck * 4, 4.5, 0.2, 0, Math.PI * 2);
         ctx.fillStyle = '#7ab867';
         ctx.fill();
         ctx.restore();
 
-        // Rear flippers — smaller, alternating paddle
-        var rearFlip = Math.sin(time * 2.5 + 1.5) * 0.25;
+        // Rear flippers — opposite phase to their front diagonal partner
+        var rearFlipA = isStroking ? Math.sin(time * 2.5 + Math.PI) * 0.25 * strokeIntensity : -0.1 * glideTuck;
         ctx.save();
         ctx.translate(-sz * 0.55, -sz * 0.3);
-        ctx.rotate(-0.3 + rearFlip);
+        ctx.rotate(-0.3 + rearFlipA);
         ctx.beginPath();
-        ctx.ellipse(0, 0, 10, 3.5, -0.1, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, 10 - glideTuck * 2, 3.5, -0.1, 0, Math.PI * 2);
         ctx.fillStyle = '#6aa85a';
         ctx.fill();
         ctx.restore();
+        var rearFlipB = isStroking ? Math.sin(time * 2.5) * 0.25 * strokeIntensity : -0.1 * glideTuck;
         ctx.save();
         ctx.translate(-sz * 0.55, sz * 0.3);
-        ctx.rotate(0.3 - rearFlip);
+        ctx.rotate(0.3 - rearFlipB);
         ctx.beginPath();
-        ctx.ellipse(0, 0, 10, 3.5, 0.1, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, 10 - glideTuck * 2, 3.5, 0.1, 0, Math.PI * 2);
         ctx.fillStyle = '#6aa85a';
         ctx.fill();
         ctx.restore();
@@ -638,58 +685,98 @@
         ctx.restore();
     }
 
-    // Hammerhead — dark silhouette drifting in the far background
+    // Hammerhead — dark silhouette with S-curve body undulation
+    var hammerSpine = []; // pre-allocated 5-segment spine
+    for (var _hs = 0; _hs < 6; _hs++) hammerSpine.push({ x: 0, y: 0 });
+
     function drawHammerhead(time, c) {
-        var period = 60; // seconds for a full round trip
+        var period = 60;
         var phase = ((time - c.startTime) % period) / period;
-        var tri = Math.abs(2 * phase - 1); // 0→1→0 triangle wave
-        var x = -60 + tri * (W + 120);
-        var y = H * 0.35 + Math.sin(time * 0.2) * 30;
+        var tri = Math.abs(2 * phase - 1);
+        var x = -60 + tri * (W + 120) + (c.nudgeX || 0);
+        var y = H * 0.35 + Math.sin(time * 0.2) * 30 + (c.nudgeY || 0);
         var sz = 40;
+        var segs = 5;
+        var segLen = sz * 0.5; // each segment length
+        var waveFreq = 2.5;
+        var waveAmp = sz * 0.08;
 
         ctx.save();
-        ctx.globalAlpha = 0.15;
+        ctx.globalAlpha = 0.25;
         ctx.translate(x, y);
-        // Face direction of travel
         if (phase < 0.5) ctx.scale(-1, 1);
 
-        // Body
+        // Build spine: segment 0 = nose, segment 5 = tail tip
+        // Each segment gets a phase-offset lateral sine displacement
+        for (var i = 0; i <= segs; i++) {
+            var t = i / segs; // 0 at nose, 1 at tail
+            var spineX = sz * 1.2 - t * sz * 2.4; // nose to tail along x
+            var lateral = Math.sin(time * waveFreq - t * Math.PI * 1.5) * waveAmp * t * t;
+            hammerSpine[i].x = spineX;
+            hammerSpine[i].y = lateral;
+        }
+
+        // Body as filled bezier strip connecting spine points
+        var bodyHalfWidths = [sz * 0.15, sz * 0.22, sz * 0.2, sz * 0.15, sz * 0.08, sz * 0.03];
         ctx.beginPath();
-        ctx.moveTo(sz * 1.2, 0);
-        ctx.quadraticCurveTo(sz * 0.6, -sz * 0.25, -sz * 0.3, -sz * 0.1);
-        ctx.quadraticCurveTo(-sz * 0.6, 0, -sz * 0.3, sz * 0.1);
-        ctx.quadraticCurveTo(sz * 0.6, sz * 0.25, sz * 1.2, 0);
+        // Top edge (nose to tail)
+        ctx.moveTo(hammerSpine[0].x, hammerSpine[0].y - bodyHalfWidths[0]);
+        for (var i = 1; i <= segs; i++) {
+            var prev = hammerSpine[i - 1];
+            var cur = hammerSpine[i];
+            var mx = (prev.x + cur.x) / 2;
+            var myTop = (prev.y - bodyHalfWidths[i - 1] + cur.y - bodyHalfWidths[i]) / 2;
+            ctx.quadraticCurveTo(prev.x, prev.y - bodyHalfWidths[i - 1], mx, myTop);
+        }
+        ctx.lineTo(hammerSpine[segs].x, hammerSpine[segs].y - bodyHalfWidths[segs]);
+        // Bottom edge (tail back to nose)
+        for (var i = segs; i >= 1; i--) {
+            var prev = hammerSpine[i];
+            var cur = hammerSpine[i - 1];
+            var mx = (prev.x + cur.x) / 2;
+            var myBot = (prev.y + bodyHalfWidths[i] + cur.y + bodyHalfWidths[i - 1]) / 2;
+            ctx.quadraticCurveTo(prev.x, prev.y + bodyHalfWidths[i], mx, myBot);
+        }
+        ctx.closePath();
         ctx.fillStyle = '#1a2a3a';
         ctx.fill();
 
-        // Hammer head
+        // Hammer head (attached to spine[0])
+        var hx = hammerSpine[0].x;
+        var hy = hammerSpine[0].y;
         ctx.beginPath();
-        ctx.moveTo(sz * 1.2, 0);
-        ctx.lineTo(sz * 1.4, -sz * 0.35);
-        ctx.quadraticCurveTo(sz * 1.5, -sz * 0.35, sz * 1.5, -sz * 0.2);
-        ctx.lineTo(sz * 1.3, 0);
-        ctx.lineTo(sz * 1.5, sz * 0.2);
-        ctx.quadraticCurveTo(sz * 1.5, sz * 0.35, sz * 1.4, sz * 0.35);
+        ctx.moveTo(hx, hy);
+        ctx.lineTo(hx + sz * 0.2, hy - sz * 0.35);
+        ctx.quadraticCurveTo(hx + sz * 0.3, hy - sz * 0.35, hx + sz * 0.3, hy - sz * 0.2);
+        ctx.lineTo(hx + sz * 0.1, hy);
+        ctx.lineTo(hx + sz * 0.3, hy + sz * 0.2);
+        ctx.quadraticCurveTo(hx + sz * 0.3, hy + sz * 0.35, hx + sz * 0.2, hy + sz * 0.35);
         ctx.closePath();
         ctx.fill();
 
-        // Dorsal fin (mid-body, ~40% from nose)
+        // Dorsal fin (attached to spine[1])
+        var dx = hammerSpine[1].x;
+        var dy = hammerSpine[1].y;
         ctx.beginPath();
-        ctx.moveTo(sz * 0.1, -sz * 0.12);
-        ctx.lineTo(sz * 0.3, -sz * 0.55);
-        ctx.lineTo(sz * 0.5, -sz * 0.12);
+        ctx.moveTo(dx + sz * 0.1, dy - bodyHalfWidths[1]);
+        ctx.lineTo(dx, dy - sz * 0.55);
+        ctx.lineTo(dx - sz * 0.15, dy - bodyHalfWidths[1]);
         ctx.fill();
 
-        // Tail
-        var tailSwing = Math.sin(time * 2) * 0.2;
+        // Tail fin (follows spine naturally — no separate rotation needed)
+        var tx = hammerSpine[segs].x;
+        var ty = hammerSpine[segs].y;
+        var tx1 = hammerSpine[segs - 1].x;
+        var ty1 = hammerSpine[segs - 1].y;
+        var tailAngle = Math.atan2(ty - ty1, tx - tx1);
         ctx.save();
-        ctx.translate(-sz * 0.3, 0);
-        ctx.rotate(tailSwing);
+        ctx.translate(tx, ty);
+        ctx.rotate(tailAngle);
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(-sz * 0.4, -sz * 0.3);
-        ctx.lineTo(-sz * 0.25, 0);
-        ctx.lineTo(-sz * 0.4, sz * 0.25);
+        ctx.lineTo(-sz * 0.35, -sz * 0.3);
+        ctx.lineTo(-sz * 0.2, 0);
+        ctx.lineTo(-sz * 0.35, sz * 0.25);
         ctx.closePath();
         ctx.fill();
         ctx.restore();
@@ -697,41 +784,48 @@
         ctx.restore();
     }
 
-    // Seahorse — vertical posture, curled tail, coronet, segmented body
+    // Seahorse — body sway, animated tail curl, variable dorsal flutter
     function drawSeahorse(time, c) {
         var entryProgress = Math.min((time - c.startTime) * 0.5, 1);
         var baseY = H * 0.72 - entryProgress * H * 0.12;
-        var x = W * 0.12 + Math.sin(time * 0.2 + 2) * 8;
-        var y = baseY + Math.sin(time * 0.8) * 6;
+        var x = W * 0.12 + Math.sin(time * 0.2 + 2) * 8 + (c.nudgeX || 0);
+        var y = baseY + Math.sin(time * 0.8) * 6 + (c.nudgeY || 0);
         var sz = 12;
+
+        // Body sway: gentle sinusoidal tilt side to side
+        var bodySway = Math.sin(time * 0.6) * 0.06;
+
+        // Tail curl oscillation: tighter ↔ looser
+        var curlTight = 0.8 + 0.2 * Math.sin(time * 0.4);
 
         ctx.save();
         ctx.globalAlpha = 0.7 * entryProgress;
         ctx.translate(x, y);
+        ctx.rotate(bodySway); // whole body tilts
 
-        // Curled prehensile tail (logarithmic spiral at bottom)
+        // Curled prehensile tail — curl radius oscillates
         ctx.beginPath();
         ctx.moveTo(sz * 0.1, sz * 1.2);
-        ctx.quadraticCurveTo(sz * 0.5, sz * 1.8, sz * 0.3, sz * 2.2);
-        ctx.quadraticCurveTo(-sz * 0.1, sz * 2.5, -sz * 0.3, sz * 2.2);
-        ctx.quadraticCurveTo(-sz * 0.5, sz * 1.9, -sz * 0.15, sz * 1.7);
+        ctx.quadraticCurveTo(sz * 0.5 * curlTight, sz * 1.8, sz * 0.3 * curlTight, sz * 2.2);
+        ctx.quadraticCurveTo(-sz * 0.1 * curlTight, sz * 2.5 * curlTight, -sz * 0.3 * curlTight, sz * 2.2);
+        ctx.quadraticCurveTo(-sz * 0.5 * curlTight, sz * 1.9, -sz * 0.15, sz * 1.7);
         ctx.quadraticCurveTo(sz * 0.1, sz * 1.5, sz * 0.05, sz * 1.4);
         ctx.lineWidth = sz * 0.25;
         ctx.strokeStyle = '#e09350';
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        // Body trunk (vertical, slightly convex belly)
+        // Body trunk
         ctx.beginPath();
-        ctx.moveTo(0, -sz * 0.8); // neck base
-        ctx.quadraticCurveTo(sz * 0.6, -sz * 0.2, sz * 0.45, sz * 0.5); // belly curves out
-        ctx.quadraticCurveTo(sz * 0.25, sz * 1.0, sz * 0.1, sz * 1.2); // taper to tail
+        ctx.moveTo(0, -sz * 0.8);
+        ctx.quadraticCurveTo(sz * 0.6, -sz * 0.2, sz * 0.45, sz * 0.5);
+        ctx.quadraticCurveTo(sz * 0.25, sz * 1.0, sz * 0.1, sz * 1.2);
         ctx.lineWidth = sz * 0.55;
         ctx.strokeStyle = '#f4a261';
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        // Body segments (horizontal ridges)
+        // Body segments
         ctx.strokeStyle = 'rgba(200, 130, 60, 0.4)';
         ctx.lineWidth = 0.6;
         for (var seg = 0; seg < 7; seg++) {
@@ -743,12 +837,11 @@
             ctx.stroke();
         }
 
-        // Head (angled ~45 degrees from body, facing right)
+        // Head
         ctx.save();
         ctx.translate(0, -sz * 0.9);
-        ctx.rotate(-0.3); // slight forward tilt
+        ctx.rotate(-0.3);
 
-        // Coronet (small crown bump on top)
         ctx.beginPath();
         ctx.moveTo(-sz * 0.1, -sz * 0.6);
         ctx.lineTo(0, -sz * 0.85);
@@ -756,13 +849,11 @@
         ctx.fillStyle = '#d08840';
         ctx.fill();
 
-        // Head shape
         ctx.beginPath();
         ctx.ellipse(0, -sz * 0.3, sz * 0.28, sz * 0.35, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#f4a261';
         ctx.fill();
 
-        // Tubular snout (angled downward-forward)
         ctx.beginPath();
         ctx.moveTo(sz * 0.2, -sz * 0.25);
         ctx.lineTo(sz * 0.75, -sz * 0.45);
@@ -771,7 +862,6 @@
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        // Eye
         ctx.beginPath();
         ctx.arc(sz * 0.05, -sz * 0.35, 1.8, 0, Math.PI * 2);
         ctx.fillStyle = '#1a1a2e';
@@ -779,8 +869,10 @@
 
         ctx.restore();
 
-        // Dorsal fin (fluttering rapidly on the back)
-        var flutter = Math.sin(time * 15) * 0.08; // fast flutter
+        // Dorsal fin — variable flutter speed (faster bursts for "swimming", slower at rest)
+        var flutterBurst = 0.5 + 0.5 * Math.sin(time * 0.3); // burst envelope
+        var flutterSpeed = 12 + flutterBurst * 8; // 12-20 Hz
+        var flutter = Math.sin(time * flutterSpeed) * (0.06 + flutterBurst * 0.04);
         ctx.save();
         ctx.translate(-sz * 0.15, sz * 0.1);
         ctx.rotate(flutter);
@@ -793,14 +885,24 @@
         ctx.restore();
     }
 
-    // Fish school — 12 tiny fish in a boid-like flock
+    // Fish school — 12 tiny fish with boid-like separation + cohesion
     var schoolFish = [];
+    var SCHOOL_COUNT = 12;
+    var SCHOOL_SEPARATION = 18; // minimum distance between neighbours
+    var SCHOOL_COHESION = 0.02; // spring strength toward school centre
+    var SCHOOL_SEPARATION_FORCE = 1.5;
+    var SCHOOL_WANDER_RATE = 0.3; // radians/sec wander drift
+
     function initSchoolFish() {
         schoolFish = [];
-        for (var i = 0; i < 12; i++) {
+        for (var i = 0; i < SCHOOL_COUNT; i++) {
             schoolFish.push({
-                ox: (Math.random() - 0.5) * 60, // offset from centre
+                // Position relative to school centre
+                ox: (Math.random() - 0.5) * 60,
                 oy: (Math.random() - 0.5) * 40,
+                vx: 0,
+                vy: 0,
+                wanderAngle: Math.random() * Math.PI * 2,
                 phase: Math.random() * Math.PI * 2,
                 size: 4 + Math.random() * 3,
             });
@@ -808,23 +910,76 @@
     }
     initSchoolFish();
 
+    function updateSchoolFish(dt) {
+        var dtSec = dt / 60; // dt is in frames (~60fps), convert to approx seconds
+        // Compute school centroid (relative offsets)
+        var avgX = 0, avgY = 0;
+        for (var i = 0; i < schoolFish.length; i++) {
+            avgX += schoolFish[i].ox;
+            avgY += schoolFish[i].oy;
+        }
+        avgX /= schoolFish.length;
+        avgY /= schoolFish.length;
+
+        for (var i = 0; i < schoolFish.length; i++) {
+            var sf = schoolFish[i];
+            // Cohesion: spring toward centroid
+            var cohX = (avgX - sf.ox) * SCHOOL_COHESION;
+            var cohY = (avgY - sf.oy) * SCHOOL_COHESION;
+
+            // Separation: repel from close neighbours
+            var sepX = 0, sepY = 0;
+            for (var j = 0; j < schoolFish.length; j++) {
+                if (j === i) continue;
+                var dx = sf.ox - schoolFish[j].ox;
+                var dy = sf.oy - schoolFish[j].oy;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < SCHOOL_SEPARATION && dist > 0.1) {
+                    var push = (SCHOOL_SEPARATION - dist) / SCHOOL_SEPARATION;
+                    sepX += (dx / dist) * push * SCHOOL_SEPARATION_FORCE;
+                    sepY += (dy / dist) * push * SCHOOL_SEPARATION_FORCE;
+                }
+            }
+
+            // Random wander angle drift
+            sf.wanderAngle += (Math.random() - 0.5) * SCHOOL_WANDER_RATE * dtSec;
+            var wandX = Math.cos(sf.wanderAngle) * 0.3;
+            var wandY = Math.sin(sf.wanderAngle) * 0.3;
+
+            // Apply forces
+            sf.vx += (cohX + sepX + wandX) * dtSec;
+            sf.vy += (cohY + sepY + wandY) * dtSec;
+            // Damping
+            sf.vx *= 0.95;
+            sf.vy *= 0.95;
+            // Integrate
+            sf.ox += sf.vx * dt;
+            sf.oy += sf.vy * dt;
+            // Soft boundary: keep within ~80px of centre
+            if (Math.abs(sf.ox) > 80) sf.ox *= 0.98;
+            if (Math.abs(sf.oy) > 50) sf.oy *= 0.98;
+        }
+    }
+
     function drawFishSchool(time, c) {
         var progress = (time - c.startTime) * 0.03;
-        // Centre of the school drifts in a figure-8
-        var cx = W * 0.5 + Math.sin(progress * 0.7) * W * 0.25;
-        var cy = H * 0.45 + Math.sin(progress * 0.5) * H * 0.15;
+        // School centre still follows figure-8 path
+        var cx = W * 0.5 + Math.sin(progress * 0.7) * W * 0.25 + (c.nudgeX || 0);
+        var cy = H * 0.45 + Math.sin(progress * 0.5) * H * 0.15 + (c.nudgeY || 0);
+        // School-level heading for fish direction
+        var schoolHeading = Math.cos(progress * 0.7);
+        var schoolDir = schoolHeading > 0 ? 1 : -1;
 
         ctx.save();
         ctx.globalAlpha = 0.6;
         for (var i = 0; i < schoolFish.length; i++) {
             var sf = schoolFish[i];
-            var fx = cx + sf.ox + Math.sin(time * 0.8 + sf.phase) * 8;
-            var fy = cy + sf.oy + Math.cos(time * 0.6 + sf.phase) * 5;
-            // Smooth direction: use cosine directly for gradual heading
-            var heading = Math.cos(progress * 0.7);
-            var dir = heading > 0 ? 1 : -1;
-            // Smooth turn: compress fish horizontally near zero-crossing
-            var squeeze = Math.min(Math.abs(heading) * 3, 1);
+            var fx = cx + sf.ox;
+            var fy = cy + sf.oy;
+            // Per-fish heading: blend school direction with individual velocity
+            var localVx = sf.vx + schoolHeading * 0.5;
+            var dir = localVx > 0 ? 1 : -1;
+            var squeeze = Math.min(Math.abs(localVx) * 4 + 0.5, 1);
 
             ctx.save();
             ctx.translate(fx, fy);
@@ -854,17 +1009,42 @@
         ctx.restore();
     }
 
-    // Pistol shrimp — small crustacean on the seafloor
+    // Pistol shrimp — periodic snap, nervous behaviors, scuttle
+    // Pre-allocated snap flash particles
+    var shrimpFlash = [];
+    for (var _sf = 0; _sf < 6; _sf++) shrimpFlash.push({ x: 0, y: 0, vx: 0, vy: 0, life: 0, active: false });
+    var shrimpScuttleX = 0; // accumulated scuttle offset
+
     function drawPistolShrimp(time, c) {
         var entryProgress = Math.min((time - c.startTime) * 0.8, 1);
-        var x = W * 0.85;
-        var y = H - 20 - entryProgress * 10;
         var sz = 12;
+
+        // Snap cycle: every 6 seconds, snap takes ~0.3s
+        var snapPeriod = 6;
+        var snapCycle = (time % snapPeriod) / snapPeriod;
+        var snapPhase = snapCycle * snapPeriod; // time within cycle (0 to 6)
+        var isSnapping = snapPhase > 5.4 && snapPhase < 5.7; // snap window
+        var snapOpen = snapPhase > 5.0 && snapPhase <= 5.4; // claw opening
+        var justSnapped = snapPhase > 5.65 && snapPhase < 5.75; // just after snap
+
+        // Occasional scuttle (every ~8 seconds, short lateral movement)
+        var scuttleCycle = (time % 8) / 8;
+        var scuttleActive = scuttleCycle > 0.7 && scuttleCycle < 0.85;
+        if (scuttleActive) {
+            shrimpScuttleX += Math.sin(time * 12) * 0.3;
+        }
+        shrimpScuttleX *= 0.98; // decay back to centre
+
+        // Nervous lateral sway between snaps
+        var nervousSway = Math.sin(time * 3.5) * 1.5 + Math.sin(time * 5.7) * 0.8;
+
+        var x = W * 0.85 + nervousSway + shrimpScuttleX + (c.nudgeX || 0);
+        var y = H - 20 - entryProgress * 10 + (c.nudgeY || 0);
 
         ctx.save();
         ctx.globalAlpha = 0.75 * entryProgress;
         ctx.translate(x, y);
-        ctx.scale(-1, 1); // face inward (left)
+        ctx.scale(-1, 1);
 
         // Body segments
         ctx.beginPath();
@@ -876,16 +1056,48 @@
         ctx.fillStyle = '#d06040';
         ctx.fill();
 
-        // Big claw (the snapping one!)
-        var snapAngle = Math.sin(time * 0.5) * 0.1; // gentle idle movement
+        // Big claw — snap animation
+        var clawAngle;
+        if (snapOpen) {
+            // Claw opens wide before snap
+            clawAngle = -0.3 - (snapPhase - 5.0) / 0.4 * 0.5;
+        } else if (isSnapping) {
+            // Claw slams shut
+            clawAngle = -0.8 + (snapPhase - 5.4) / 0.3 * 0.9;
+        } else {
+            // Gentle idle movement
+            clawAngle = -0.3 + Math.sin(time * 0.5) * 0.1;
+        }
         ctx.save();
         ctx.translate(sz * 1.3, -sz * 0.3);
-        ctx.rotate(-0.3 + snapAngle);
+        ctx.rotate(clawAngle);
         ctx.beginPath();
         ctx.ellipse(0, 0, sz * 0.9, sz * 0.35, 0.2, 0, Math.PI * 2);
         ctx.fillStyle = '#c85030';
         ctx.fill();
         ctx.restore();
+
+        // Snap flash burst
+        if (justSnapped) {
+            var prevComp = ctx.globalCompositeOperation;
+            ctx.globalCompositeOperation = 'lighter';
+            var flashAlpha = 1 - (snapPhase - 5.65) / 0.1;
+            ctx.globalAlpha = flashAlpha * 0.6;
+            for (var fp = 0; fp < 5; fp++) {
+                var fAngle = fp * Math.PI * 2 / 5 + time * 3;
+                var fDist = (snapPhase - 5.65) / 0.1 * sz * 1.2;
+                ctx.beginPath();
+                ctx.arc(
+                    sz * 1.6 + Math.cos(fAngle) * fDist,
+                    -sz * 0.3 + Math.sin(fAngle) * fDist,
+                    2, 0, Math.PI * 2
+                );
+                ctx.fillStyle = 'rgba(255, 230, 180, 1)';
+                ctx.fill();
+            }
+            ctx.globalAlpha = 0.75 * entryProgress;
+            ctx.globalCompositeOperation = prevComp;
+        }
 
         // Small claw
         ctx.beginPath();
@@ -893,13 +1105,14 @@
         ctx.fillStyle = '#d06040';
         ctx.fill();
 
-        // Antennae
+        // Antennae — twitchy
         ctx.beginPath();
         ctx.moveTo(sz * 1.3, -sz * 0.4);
-        var antSway = Math.sin(time * 2) * 3;
-        ctx.quadraticCurveTo(sz * 1.8, -sz * 1.2 + antSway, sz * 2.2, -sz * 0.8 + antSway);
+        var antTwitch1 = Math.sin(time * 7) * 2 + Math.sin(time * 11) * 1.5;
+        var antTwitch2 = Math.sin(time * 8.5) * 2 + Math.sin(time * 13) * 1;
+        ctx.quadraticCurveTo(sz * 1.8, -sz * 1.2 + antTwitch1, sz * 2.2, -sz * 0.8 + antTwitch1);
         ctx.moveTo(sz * 1.3, -sz * 0.3);
-        ctx.quadraticCurveTo(sz * 2, -sz * 1 - antSway, sz * 2.4, -sz * 0.6 - antSway);
+        ctx.quadraticCurveTo(sz * 2, -sz * 1 - antTwitch2, sz * 2.4, -sz * 0.6 - antTwitch2);
         ctx.strokeStyle = 'rgba(224, 112, 80, 0.6)';
         ctx.lineWidth = 0.8;
         ctx.stroke();
@@ -910,13 +1123,14 @@
         ctx.fillStyle = '#1a1a2e';
         ctx.fill();
 
-        // Legs
+        // Legs — rippling walk cycle
         for (var i = 0; i < 3; i++) {
             var lx = -sz * 0.4 + i * sz * 0.5;
-            var legPhase = Math.sin(time * 3 + i * 1.2) * 2;
+            var legPhase = Math.sin(time * 5 + i * 1.8) * 2.5;
+            var legExtend = scuttleActive ? 1.3 : 1;
             ctx.beginPath();
             ctx.moveTo(lx, sz * 0.4);
-            ctx.lineTo(lx + legPhase, sz * 0.9);
+            ctx.lineTo(lx + legPhase * legExtend, sz * 0.9);
             ctx.strokeStyle = 'rgba(208, 96, 64, 0.5)';
             ctx.lineWidth = 1;
             ctx.stroke();
@@ -925,13 +1139,33 @@
         ctx.restore();
     }
 
-    // Glowing jellyfish (temperature reward) — brighter than the background one
+    // Glowing jellyfish (temperature reward) — propulsion + bezier tentacles
+    // Per-creature propulsion state (initialized lazily)
+    var glowJellyProp = { vy: 0, yOff: 0 };
+
     function drawGlowingJellyfish(time, c) {
         var entryProgress = Math.min((time - c.startTime) * 0.3, 1);
-        var cx = W * 0.7 + Math.sin(time * 0.05) * W * 0.1;
-        var cy = H * 0.3 + Math.sin(time * 0.04) * H * 0.08;
-        var pulse = 0.85 + 0.15 * Math.sin(time * 2.5);
-        var r = 25 * pulse;
+
+        // Propulsion cycle
+        var propPeriod = 3.0;
+        var propCycle = (time % propPeriod) / propPeriod;
+        var contraction;
+        if (propCycle < 0.3) {
+            contraction = Math.sin(propCycle / 0.3 * Math.PI);
+        } else {
+            contraction = 0;
+        }
+        var impulse = propCycle < 0.15 ? 0 : (propCycle < 0.3 ? -1.0 * contraction : 0.25);
+        glowJellyProp.vy = glowJellyProp.vy * 0.95 + impulse * 0.5;
+        glowJellyProp.yOff += glowJellyProp.vy * 0.016;
+        if (Math.abs(glowJellyProp.yOff) > 25) glowJellyProp.yOff *= 0.98;
+
+        var bellSquash = 1 - contraction * 0.2;
+        var bellStretch = 1 + contraction * 0.12;
+
+        var cx = W * 0.7 + Math.sin(time * 0.05) * W * 0.1 + (c.nudgeX || 0);
+        var cy = H * 0.3 + Math.sin(time * 0.04) * H * 0.08 + glowJellyProp.yOff + (c.nudgeY || 0);
+        var r = 25 * (0.85 + 0.15 * Math.sin(time * 2.5));
 
         ctx.save();
         ctx.globalAlpha = 0.4 * entryProgress;
@@ -945,13 +1179,13 @@
         ctx.fillStyle = glow;
         ctx.fillRect(-r * 2.5, -r * 2.5, r * 5, r * 5);
 
-        // Bell (dome curves upward, opens downward)
+        // Bell with propulsion shape
         ctx.beginPath();
         var first = true;
         for (var a = 0; a <= Math.PI; a += 0.06) {
             var wobble = Math.sin(a * 4 + time * 2.5) * 1.5;
-            var bx = Math.cos(a) * (r + wobble);
-            var by = -Math.sin(a) * (r * 0.65 + wobble * 0.5);
+            var bx = Math.cos(a) * (r * bellStretch + wobble);
+            var by = -Math.sin(a) * (r * 0.65 * bellSquash + wobble * 0.5);
             if (first) { ctx.moveTo(bx, by); first = false; }
             else ctx.lineTo(bx, by);
         }
@@ -963,15 +1197,20 @@
         ctx.fillStyle = bellGrad;
         ctx.fill();
 
-        // Tentacles
+        // Tentacles — bezier curves with trailing during propulsion
+        var trailBias = contraction * 5;
         for (var t = 0; t < 4; t++) {
-            var tx = (t / 3 - 0.5) * r * 1.4;
+            var tx = (t / 3 - 0.5) * r * 1.4 * bellStretch;
             ctx.beginPath();
             ctx.moveTo(tx, r * 0.1);
-            for (var seg = 1; seg <= 6; seg++) {
-                var st = seg / 6;
-                var sway = Math.sin(time * 1.8 + t * 1.3 + seg * 0.5) * (6 * st);
-                ctx.lineTo(tx + sway, r * 0.1 + st * 35);
+            for (var seg = 1; seg <= 4; seg++) {
+                var st = seg / 4;
+                var sway = Math.sin(time * 1.8 + t * 1.3 + seg * 0.7) * (8 * st) + trailBias * st;
+                var cpx = tx + sway * 0.6 + Math.sin(time * 0.8 + t * 2 + seg) * 3;
+                var cpy = r * 0.1 + (st - 0.12) * 35;
+                var ex = tx + sway;
+                var ey = r * 0.1 + st * 35;
+                ctx.quadraticCurveTo(cpx, cpy, ex, ey);
             }
             ctx.strokeStyle = 'rgba(100, 255, 218, 0.2)';
             ctx.lineWidth = 1.5;
@@ -999,6 +1238,64 @@
         discoveredCreatures[questionId] = true;
         creatureFlashText = def.emoji + ' ' + def.name + ' discovered!';
         creatureFlashAlpha = 1;
+    }
+
+    // Estimate creature screen positions for bubble avoidance
+    var BUBBLE_AVOID_DIST = 120; // start avoiding within this distance
+    var BUBBLE_AVOID_FORCE = 0.8;
+
+    function getCreaturePos(id, time, c) {
+        var period, phase, tri, progress;
+        switch (id) {
+            case 'speed': // sea turtle
+                period = 40;
+                phase = ((time - c.startTime) % period) / period;
+                tri = Math.abs(2 * phase - 1);
+                return { x: -60 + tri * (W + 120) + c.nudgeX, y: H * 0.2 + Math.sin(time * 0.3 + 1.5) * 20 + c.nudgeY };
+            case 'destruction': // hammerhead
+                period = 60;
+                phase = ((time - c.startTime) % period) / period;
+                tri = Math.abs(2 * phase - 1);
+                return { x: -60 + tri * (W + 120) + c.nudgeX, y: H * 0.35 + Math.sin(time * 0.2) * 30 + c.nudgeY };
+            case 'temperature': // glowing jellyfish
+                return { x: W * 0.7 + Math.sin(time * 0.05) * W * 0.1 + c.nudgeX, y: H * 0.3 + Math.sin(time * 0.04) * H * 0.08 + c.nudgeY };
+            case 'useful': // seahorse
+                return { x: W * 0.12 + Math.sin(time * 0.2 + 2) * 8 + c.nudgeX, y: H * 0.72 + Math.sin(time * 0.8) * 6 + c.nudgeY };
+            case 'where': // fish school
+                progress = (time - c.startTime) * 0.03;
+                return { x: W * 0.5 + Math.sin(progress * 0.7) * W * 0.25 + c.nudgeX, y: H * 0.45 + Math.sin(progress * 0.5) * H * 0.15 + c.nudgeY };
+            case 'shrimp': // pistol shrimp
+                return { x: W * 0.85 + c.nudgeX, y: H - 30 + c.nudgeY };
+            default:
+                return { x: 0, y: 0 };
+        }
+    }
+
+    function updateCreatureNudge(dt) {
+        for (var id in unlockedCreatures) {
+            var c = unlockedCreatures[id];
+            if (c.nudgeX === undefined) { c.nudgeX = 0; c.nudgeY = 0; }
+            var pos = getCreaturePos(id, animTime, c);
+            // Check distance to each active question bubble
+            for (var i = 0; i < questionBubbles.length; i++) {
+                var qb = questionBubbles[i];
+                if (!qb.active) continue;
+                var dx = pos.x - qb.x;
+                var dy = pos.y - qb.y;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < BUBBLE_AVOID_DIST && dist > 1) {
+                    var push = (BUBBLE_AVOID_DIST - dist) / BUBBLE_AVOID_DIST;
+                    c.nudgeX += (dx / dist) * push * BUBBLE_AVOID_FORCE * (dt / 60);
+                    c.nudgeY += (dy / dist) * push * BUBBLE_AVOID_FORCE * (dt / 60);
+                }
+            }
+            // Decay nudge back to zero
+            c.nudgeX *= 0.96;
+            c.nudgeY *= 0.96;
+            // Clamp to prevent runaway
+            if (Math.abs(c.nudgeX) > 40) c.nudgeX *= 0.9;
+            if (Math.abs(c.nudgeY) > 40) c.nudgeY *= 0.9;
+        }
     }
 
     function drawUnlockedCreatures(time) {
@@ -1667,13 +1964,18 @@
         var s = f.size;
         var d = f.dir;
 
+        // Acceleration-dependent tail frequency: faster wag when startled
+        var startleSpeed = Math.sqrt(f.startleVx * f.startleVx + f.startleVy * f.startleVy);
+        var tailFreq = 4 + startleSpeed * 3; // 4Hz cruising, up to ~22Hz startled
+        var tailAmp = 0.3 + startleSpeed * 0.15;
+
         ctx.save();
         ctx.globalAlpha = f.opacity;
         ctx.translate(x, y);
-        ctx.scale(d, 1); // flip for direction
+        ctx.scale(d, 1);
 
-        // Tail (animated wag)
-        var tailAngle = Math.sin(time * 4 + f.tailPhase) * 0.3;
+        // Tail (acceleration-dependent wag)
+        var tailAngle = Math.sin(time * tailFreq + f.tailPhase) * tailAmp;
         ctx.save();
         ctx.translate(-s * 0.9, 0);
         ctx.rotate(tailAngle);
@@ -1700,6 +2002,19 @@
         ctx.globalAlpha = f.opacity * 0.7;
         ctx.fill();
         ctx.globalAlpha = f.opacity;
+
+        // Pectoral fin (small fin that fans during normal swimming)
+        var pectAngle = Math.sin(time * 3 + f.tailPhase * 0.5) * 0.3;
+        ctx.save();
+        ctx.translate(s * 0.1, s * 0.25);
+        ctx.rotate(0.4 + pectAngle);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s * 0.25, s * 0.1, 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = f.palette.fin;
+        ctx.globalAlpha = f.opacity * 0.6;
+        ctx.fill();
+        ctx.globalAlpha = f.opacity;
+        ctx.restore();
 
         // Dorsal fin
         ctx.beginPath();
@@ -2358,8 +2673,10 @@
     function spawnAllCreatures() {
         var ids = ['speed', 'temperature', 'destruction', 'useful', 'where', 'shrimp'];
         for (var i = 0; i < ids.length; i++) {
-            // Stagger start times so entry animations don't all fire at once
-            unlockedCreatures[ids[i]] = { startTime: animTime - i * 0.5 };
+            unlockedCreatures[ids[i]] = {
+                startTime: animTime - i * 0.5,
+                nudgeX: 0, nudgeY: 0, // bubble avoidance offset
+            };
         }
     }
 
@@ -2796,6 +3113,8 @@
         updateDecorativeBubbles(dt);
         updateMarineSnow(dt);
         updateFish(dt);
+        updateSchoolFish(dt);
+        updateCreatureNudge(dt);
         updateBioParticles(dt);
         updateTrailParticles(dt);
         updateShockwaves(dt);
