@@ -2370,6 +2370,7 @@
         appState = State.BUBBLES;
         lastInteraction = Date.now();
         initQuestionBubbles();
+        spawnAllCreatures();
     }
 
     splashEl.addEventListener('pointerdown', function (e) {
