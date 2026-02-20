@@ -350,7 +350,7 @@
         bellRadius: 35,
         pulsePhase: 0,
         tentacles: 5,
-        opacity: 0.2,
+        opacity: 0.38,
         // Propulsion state
         propCycle: 0,        // 0-1 cycle phase
         propVy: 0,           // vertical velocity from propulsion
@@ -412,12 +412,12 @@
         }
         ctx.closePath();
         var bellGrad = ctx.createRadialGradient(0, -r * 0.3, 0, 0, 0, r);
-        bellGrad.addColorStop(0, 'rgba(180, 200, 240, 0.4)');
-        bellGrad.addColorStop(0.5, 'rgba(200, 160, 220, 0.25)');
-        bellGrad.addColorStop(1, 'rgba(160, 140, 200, 0.1)');
+        bellGrad.addColorStop(0, 'rgba(180, 200, 240, 0.55)');
+        bellGrad.addColorStop(0.5, 'rgba(200, 160, 220, 0.35)');
+        bellGrad.addColorStop(1, 'rgba(160, 140, 200, 0.15)');
         ctx.fillStyle = bellGrad;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(200, 220, 255, 0.2)';
+        ctx.strokeStyle = 'rgba(200, 220, 255, 0.3)';
         ctx.lineWidth = 1;
         ctx.stroke();
 
@@ -439,7 +439,7 @@
                 var ey = bellBottom + st * tentLen;
                 ctx.quadraticCurveTo(cpx, cpy, ex, ey);
             }
-            ctx.strokeStyle = 'rgba(180, 160, 220, ' + (0.15 * (1 - 0.5 * (Math.abs(t - 2) / 2))) + ')';
+            ctx.strokeStyle = 'rgba(180, 160, 220, ' + (0.25 * (1 - 0.4 * (Math.abs(t - 2) / 2))) + ')';
             ctx.lineWidth = 2 - (1.5 * (Math.abs(t - 2) / (jf.tentacles - 1)));
             ctx.stroke();
         }
@@ -702,7 +702,7 @@
         var waveAmp = sz * 0.08;
 
         ctx.save();
-        ctx.globalAlpha = 0.25;
+        ctx.globalAlpha = 0.32;
         ctx.translate(x, y);
         if (phase < 0.5) ctx.scale(-1, 1);
 
@@ -871,7 +871,7 @@
 
         // Dorsal fin — variable flutter speed (faster bursts for "swimming", slower at rest)
         var flutterBurst = 0.5 + 0.5 * Math.sin(time * 0.3); // burst envelope
-        var flutterSpeed = 12 + flutterBurst * 8; // 12-20 Hz
+        var flutterSpeed = 6 + flutterBurst * 6; // 6-12 Hz
         var flutter = Math.sin(time * flutterSpeed) * (0.06 + flutterBurst * 0.04);
         ctx.save();
         ctx.translate(-sz * 0.15, sz * 0.1);
