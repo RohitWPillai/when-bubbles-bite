@@ -27,7 +27,7 @@
     var MINI_BURST_COUNT = 8;
     var IDLE_TIMEOUT_MS = 45000;
     var QUESTION_COOLDOWN_MS = 60000;
-    var HIT_FORGIVENESS = 1.15;
+    var HIT_FORGIVENESS = 1.3;
     var DPR_CAP = 1.5;
     var FISH_COUNT = 5;
     var GOD_RAY_COUNT = 4;
@@ -311,7 +311,6 @@
                 prevY = ny;
             }
 
-            var tipWidth = 1;
             ctx.lineWidth = sw.baseWidth;
             ctx.strokeStyle = sw.color + '0.8)';
             ctx.lineCap = 'round';
@@ -1574,6 +1573,13 @@
 
     var idleWarningShown = false;
     var idleWarningEl = document.getElementById('idle-warning');
+    if (idleWarningEl) {
+        idleWarningEl.addEventListener('pointerdown', function () {
+            lastInteraction = Date.now();
+            idleWarningShown = false;
+            idleWarningEl.classList.add('hidden');
+        });
+    }
 
     // =========================================================================
     // Fish
@@ -2139,24 +2145,6 @@
         }
     }
 
-    // Screen micro-shake for dramatic reveals
-    function screenShake(intensity, duration) {
-        var el = document.getElementById('bubble-canvas');
-        var start = performance.now();
-        function shake(now) {
-            var elapsed = now - start;
-            if (elapsed > duration) { el.style.transform = ''; return; }
-            var decay = 1 - (elapsed / duration);
-            var x = (Math.random() - 0.5) * intensity * decay;
-            var y = (Math.random() - 0.5) * intensity * decay;
-            el.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
-            requestAnimationFrame(shake);
-        }
-        // Respect prefers-reduced-motion
-        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        requestAnimationFrame(shake);
-    }
-
     // Number count-up animation
     function animateCountUp(el, targetStr, duration) {
         // Extract numeric value (e.g. "4,700" → 4700)
@@ -2350,6 +2338,7 @@
         fingerTrail = [];
         userBubbles = [];
         nursery.active = false;
+        if (nurseryTimer) { clearTimeout(nurseryTimer); nurseryTimer = null; }
         // Cancel any in-flight respawn timers
         for (var i = 0; i < respawnTimerIds.length; i++) {
             clearTimeout(respawnTimerIds[i]);
@@ -2381,7 +2370,6 @@
         appState = State.BUBBLES;
         lastInteraction = Date.now();
         initQuestionBubbles();
-        spawnAllCreatures();
     }
 
     splashEl.addEventListener('pointerdown', function (e) {
@@ -2394,6 +2382,8 @@
     // =========================================================================
     // Touch / click detection (with decorative popping + tap ripple)
     // =========================================================================
+
+    var nurseryTimer = null;
 
     canvas.addEventListener('pointerdown', function (e) {
         if (appState !== State.BUBBLES) return;
@@ -2409,6 +2399,7 @@
         var py = e.clientY - rect.top;
 
         // Check question bubbles first (reverse draw order)
+        var hitQuestion = false;
         for (var i = questionBubbles.length - 1; i >= 0; i--) {
             var qb = questionBubbles[i];
             if (!qb.active || qb.popPhase) continue;
@@ -2416,6 +2407,7 @@
             var dy = py - qb.y;
             var dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < qb.r * HIT_FORGIVENESS) {
+                hitQuestion = true;
                 // Store pop position for radial reveal
                 lastPopX = qb.x / W;
                 lastPopY = qb.y / H;
@@ -2452,32 +2444,49 @@
                     }, 80);
                     squeezeTimerIds.push(squeezeTimer);
                 })(qb);
-                return;
+                break;
             }
         }
 
-        // Check decorative bubbles (pop for delight!)
-        for (var i = decorativeBubbles.length - 1; i >= 0; i--) {
-            var b = decorativeBubbles[i];
-            var bx = b.x + Math.sin(animTime * b.wobbleFreq + b.wobbleOffset) * b.wobbleAmp;
-            var dx = px - bx;
-            var dy = py - b.y;
-            var dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < b.r * 1.3) {
-                audioManager.playPop(true);
-                spawnBurst(bx, b.y, true);
-                startleFish(bx, b.y);
-                resetDecorativeBubble(b);
-                return;
+        if (!hitQuestion) {
+            // Check decorative bubbles (pop for delight!)
+            var hitDecorative = false;
+            for (var i = decorativeBubbles.length - 1; i >= 0; i--) {
+                var b = decorativeBubbles[i];
+                var bx = b.x + Math.sin(animTime * b.wobbleFreq + b.wobbleOffset) * b.wobbleAmp;
+                var dx = px - bx;
+                var dy = py - b.y;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < b.r * HIT_FORGIVENESS) {
+                    audioManager.playPop(true);
+                    spawnBurst(bx, b.y, true);
+                    startleFish(bx, b.y);
+                    resetDecorativeBubble(b);
+                    hitDecorative = true;
+                    break;
+                }
+            }
+
+            if (!hitDecorative) {
+                // Nothing hit — spawn a water ripple
+                spawnRipple(px, py);
             }
         }
 
-        // Nothing hit — spawn a water ripple
-        spawnRipple(px, py);
+        // Start nursery long-press timer only if no question bubble was hit
+        if (nurseryTimer) { clearTimeout(nurseryTimer); nurseryTimer = null; }
+        if (!hitQuestion) {
+            nurseryTimer = setTimeout(function () {
+                nursery.active = true;
+                nursery.x = px;
+                nursery.y = py;
+                nursery.startTime = animTime;
+                nursery.radius = 5;
+            }, 1500);
+        }
     });
 
     // Finger-trail bioluminescence — track pointermove
-    var nurseryTimer = null;
     canvas.addEventListener('pointermove', function (e) {
         if (appState !== State.BUBBLES) return;
         var rect = canvas.getBoundingClientRect();
@@ -2489,23 +2498,6 @@
             nursery.x = px;
             nursery.y = py;
         }
-    });
-
-    // Bubble nursery — long press to create
-    canvas.addEventListener('pointerdown', function (e) {
-        if (appState !== State.BUBBLES) return;
-        var rect = canvas.getBoundingClientRect();
-        var px = e.clientX - rect.left;
-        var py = e.clientY - rect.top;
-        // Start nursery timer (1.5s long press)
-        if (nurseryTimer) clearTimeout(nurseryTimer);
-        nurseryTimer = setTimeout(function () {
-            nursery.active = true;
-            nursery.x = px;
-            nursery.y = py;
-            nursery.startTime = animTime;
-            nursery.radius = 5;
-        }, 1500);
     });
 
     canvas.addEventListener('pointerup', function () {
@@ -2571,6 +2563,37 @@
     // Rendering
     // =========================================================================
 
+    // Pre-rendered decorative bubble sprite (avoids per-frame gradient creation)
+    var decoBubbleSprite = (function () {
+        var size = 64; // sprite size in px
+        var c = document.createElement('canvas');
+        c.width = size;
+        c.height = size;
+        var sc = c.getContext('2d');
+        var r = size / 2;
+        var cx = r;
+        var cy = r;
+        // Body gradient
+        var grad = sc.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+        grad.addColorStop(0, 'rgba(200, 235, 255, 0.4)');
+        grad.addColorStop(0.7, 'rgba(150, 210, 240, 0.2)');
+        grad.addColorStop(1, 'rgba(100, 180, 220, 0.05)');
+        sc.beginPath();
+        sc.arc(cx, cy, r - 0.5, 0, Math.PI * 2);
+        sc.fillStyle = grad;
+        sc.fill();
+        sc.strokeStyle = COLORS.bubbleRim;
+        sc.lineWidth = 0.5;
+        sc.stroke();
+        // Highlight
+        sc.beginPath();
+        sc.arc(cx - r * 0.3, cy - r * 0.35, r * 0.25, 0, Math.PI * 2);
+        sc.fillStyle = COLORS.bubbleHighlight;
+        sc.globalAlpha = 0.5;
+        sc.fill();
+        return c;
+    })();
+
     function drawDecorativeBubble(b, time) {
         var x = b.x + Math.sin(time * b.wobbleFreq + b.wobbleOffset) * b.wobbleAmp;
         var y = b.y;
@@ -2579,23 +2602,9 @@
         x += disp.x;
         y += disp.y;
         var r = b.r;
+        var d = r * 2;
         ctx.globalAlpha = b.opacity;
-        var grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
-        grad.addColorStop(0, 'rgba(200, 235, 255, 0.4)');
-        grad.addColorStop(0.7, 'rgba(150, 210, 240, 0.2)');
-        grad.addColorStop(1, 'rgba(100, 180, 220, 0.05)');
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        ctx.strokeStyle = COLORS.bubbleRim;
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.25, 0, Math.PI * 2);
-        ctx.fillStyle = COLORS.bubbleHighlight;
-        ctx.globalAlpha = b.opacity * 0.5;
-        ctx.fill();
+        ctx.drawImage(decoBubbleSprite, x - r, y - r, d, d);
         ctx.globalAlpha = 1;
     }
 
@@ -2864,6 +2873,7 @@
         } else {
             running = true;
             lastTime = 0;
+            lastInteraction = Date.now();
             rafId = requestAnimationFrame(gameLoop);
             if (appState !== State.SPLASH) {
                 audioManager.setDroneVolume(0.06);
