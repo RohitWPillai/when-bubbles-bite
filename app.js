@@ -1902,6 +1902,12 @@
     // Fish
     // =========================================================================
 
+    var lastTapX = -1000, lastTapY = -1000; // for eye tracking (off-screen default)
+
+    var FISH_SPINE_SEGS = 8;
+    var fishSpine = [];
+    for (var _fs = 0; _fs <= FISH_SPINE_SEGS; _fs++) fishSpine.push({ x: 0, y: 0 });
+
     var fishes = [];
 
     function createFish(i) {
@@ -1923,6 +1929,11 @@
             opacity: 0.25 + depth * 0.55,
             startleVx: 0,
             startleVy: 0,
+            breathPhase: Math.random() * Math.PI * 2,
+            freezeTimer: 0,
+            shimmerOffset: Math.random() * Math.PI * 2,
+            pendingStartleVx: 0,
+            pendingStartleVy: 0,
         };
     }
 
@@ -1944,6 +1955,11 @@
         f.wobbleOffset = Math.random() * Math.PI * 2;
         f.startleVx = 0;
         f.startleVy = 0;
+        f.breathPhase = Math.random() * Math.PI * 2;
+        f.freezeTimer = 0;
+        f.shimmerOffset = Math.random() * Math.PI * 2;
+        f.pendingStartleVx = 0;
+        f.pendingStartleVy = 0;
     }
 
     function startleFish(bx, by) {
@@ -1955,19 +1971,35 @@
             if (dist < 150) {
                 var angle = Math.atan2(dy, dx);
                 var force = (150 - dist) / 150 * 6;
-                f.startleVx = Math.cos(angle) * force;
-                f.startleVy = Math.sin(angle) * force;
+                f.pendingStartleVx = Math.cos(angle) * force;
+                f.pendingStartleVy = Math.sin(angle) * force;
+                f.freezeTimer = 0.08; // 80ms anticipation freeze
             }
         }
     }
 
     function updateFish(dt) {
+        var dtSec = dt / 60; // dt is in frames (~60fps), convert to rough seconds
         for (var i = 0; i < fishes.length; i++) {
             var f = fishes[i];
-            f.x += (f.speed * f.dir + f.startleVx) * dt;
-            f.y += f.startleVy * dt;
-            f.startleVx *= Math.pow(0.93, dt);
-            f.startleVy *= Math.pow(0.93, dt);
+
+            // Freeze timer: body stiffens before startle burst
+            if (f.freezeTimer > 0) {
+                f.freezeTimer -= dtSec;
+                if (f.freezeTimer <= 0) {
+                    f.freezeTimer = 0;
+                    f.startleVx = f.pendingStartleVx;
+                    f.startleVy = f.pendingStartleVy;
+                    f.pendingStartleVx = 0;
+                    f.pendingStartleVy = 0;
+                }
+                // During freeze: no movement update (body stiffens)
+            } else {
+                f.x += (f.speed * f.dir + f.startleVx) * dt;
+                f.y += f.startleVy * dt;
+                f.startleVx *= Math.pow(0.93, dt);
+                f.startleVy *= Math.pow(0.93, dt);
+            }
 
             // Wrap
             if (f.dir > 0 && f.x > W + f.size * 4) resetFish(f, i);
@@ -1978,82 +2010,272 @@
         }
     }
 
+    // Body half-width profile: widest at segment 2-3, tapers to nose and tail
+    var FISH_BODY_PROFILE = [0.12, 0.22, 0.30, 0.32, 0.28, 0.20, 0.12, 0.06, 0.02];
+
     function drawFish(f, time) {
         var x = f.x;
         var y = f.y + Math.sin(time * f.wobbleFreq + f.wobbleOffset) * f.wobbleAmp;
         var s = f.size;
         var d = f.dir;
+        var segs = FISH_SPINE_SEGS;
 
-        // Acceleration-dependent tail frequency: faster wag when startled
+        // Acceleration-dependent tail frequency
         var startleSpeed = Math.sqrt(f.startleVx * f.startleVx + f.startleVy * f.startleVy);
-        var tailFreq = 4 + startleSpeed * 3; // 4Hz cruising, up to ~22Hz startled
-        var tailAmp = 0.3 + startleSpeed * 0.15;
+        var tailFreq = 4 + startleSpeed * 3;
+        var waveAmp = s * 0.08 + startleSpeed * s * 0.04;
+        var isFrozen = f.freezeTimer > 0;
 
         ctx.save();
         ctx.globalAlpha = f.opacity;
         ctx.translate(x, y);
         ctx.scale(d, 1);
 
-        // Tail (acceleration-dependent wag)
-        var tailAngle = Math.sin(time * tailFreq + f.tailPhase) * tailAmp;
-        ctx.save();
-        ctx.translate(-s * 0.9, 0);
-        ctx.rotate(tailAngle);
+        // --- (a) Build spine: 9 points (0=nose, 8=tail) ---
+        for (var i = 0; i <= segs; i++) {
+            var t = i / segs;
+            var spineX = s * 1.0 - t * s * 2.0;
+            var amp = isFrozen ? waveAmp * 0.05 : waveAmp;
+            var lateral = Math.sin(time * tailFreq - t * Math.PI * 1.5) * amp * t * t;
+            fishSpine[i].x = spineX;
+            fishSpine[i].y = lateral;
+        }
+
+        // --- (b) Body as bezier strip ---
+        var bodyHalfWidths = [];
+        for (var i = 0; i <= segs; i++) {
+            bodyHalfWidths[i] = FISH_BODY_PROFILE[i] * s;
+        }
+
+        // Build body path (used for fill and shimmer clip)
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(-s * 0.6, -s * 0.35);
-        ctx.lineTo(-s * 0.45, 0);
-        ctx.lineTo(-s * 0.6, s * 0.35);
+        // Top edge (nose to tail)
+        ctx.moveTo(fishSpine[0].x, fishSpine[0].y - bodyHalfWidths[0]);
+        for (var i = 1; i <= segs; i++) {
+            var prev = fishSpine[i - 1];
+            var cur = fishSpine[i];
+            var mx = (prev.x + cur.x) / 2;
+            var myTop = (prev.y - bodyHalfWidths[i - 1] + cur.y - bodyHalfWidths[i]) / 2;
+            ctx.quadraticCurveTo(prev.x, prev.y - bodyHalfWidths[i - 1], mx, myTop);
+        }
+        ctx.lineTo(fishSpine[segs].x, fishSpine[segs].y - bodyHalfWidths[segs]);
+        // Bottom edge (tail back to nose)
+        for (var i = segs; i >= 1; i--) {
+            var prev = fishSpine[i];
+            var cur = fishSpine[i - 1];
+            var mx = (prev.x + cur.x) / 2;
+            var myBot = (prev.y + bodyHalfWidths[i] + cur.y + bodyHalfWidths[i - 1]) / 2;
+            ctx.quadraticCurveTo(prev.x, prev.y + bodyHalfWidths[i], mx, myBot);
+        }
         ctx.closePath();
-        ctx.fillStyle = f.palette.fin;
+
+        // Body gradient: darker dorsal, lighter belly
+        var bodyGrad = ctx.createLinearGradient(0, -s * 0.35, 0, s * 0.35);
+        bodyGrad.addColorStop(0, f.palette.fin);    // dorsal darker
+        bodyGrad.addColorStop(0.4, f.palette.body);  // main body
+        bodyGrad.addColorStop(1, f.palette.stripe);  // belly lighter
+        ctx.fillStyle = bodyGrad;
         ctx.fill();
+
+        // --- (i) Stripe pattern: perpendicular bands along spine ---
+        ctx.save();
+        ctx.globalAlpha = f.opacity * 0.25;
+        ctx.strokeStyle = f.palette.stripe;
+        ctx.lineWidth = s * 0.04;
+        for (var si = 2; si <= 5; si += 1.5) {
+            var idx = Math.floor(si);
+            var frac = si - idx;
+            var sx = fishSpine[idx].x * (1 - frac) + fishSpine[idx + 1].x * frac;
+            var sy = fishSpine[idx].y * (1 - frac) + fishSpine[idx + 1].y * frac;
+            var hw = bodyHalfWidths[idx] * (1 - frac) + bodyHalfWidths[idx + 1] * frac;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - hw * 0.85);
+            ctx.lineTo(sx, sy + hw * 0.85);
+            ctx.stroke();
+        }
         ctx.restore();
 
-        // Body (oval)
+        // --- (j) Shimmer overlay ---
+        ctx.save();
+        // Re-build body clip path
         ctx.beginPath();
-        ctx.ellipse(0, 0, s, s * 0.5, 0, 0, Math.PI * 2);
-        ctx.fillStyle = f.palette.body;
-        ctx.fill();
+        ctx.moveTo(fishSpine[0].x, fishSpine[0].y - bodyHalfWidths[0]);
+        for (var i = 1; i <= segs; i++) {
+            var prev = fishSpine[i - 1];
+            var cur = fishSpine[i];
+            var mx = (prev.x + cur.x) / 2;
+            var myTop = (prev.y - bodyHalfWidths[i - 1] + cur.y - bodyHalfWidths[i]) / 2;
+            ctx.quadraticCurveTo(prev.x, prev.y - bodyHalfWidths[i - 1], mx, myTop);
+        }
+        ctx.lineTo(fishSpine[segs].x, fishSpine[segs].y - bodyHalfWidths[segs]);
+        for (var i = segs; i >= 1; i--) {
+            var prev = fishSpine[i];
+            var cur = fishSpine[i - 1];
+            var mx = (prev.x + cur.x) / 2;
+            var myBot = (prev.y + bodyHalfWidths[i] + cur.y + bodyHalfWidths[i - 1]) / 2;
+            ctx.quadraticCurveTo(prev.x, prev.y + bodyHalfWidths[i], mx, myBot);
+        }
+        ctx.closePath();
+        ctx.clip();
+        var shimX = Math.sin(time * 0.8 + f.shimmerOffset) * s * 0.6;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.10;
+        ctx.drawImage(fishShimmerSprite, fishSpine[0].x - s * 0.3 + shimX, -s * 0.25, s * 2.0, s * 0.5);
+        ctx.restore();
+        ctx.globalAlpha = f.opacity;
 
-        // Stripe
+        // --- (c) Dorsal fin (attached to spine[2]) ---
+        var dsp = fishSpine[2];
+        var dorsalH = s * 0.30 + Math.sin(time * tailFreq - 0.25 * Math.PI * 1.5) * s * 0.04;
         ctx.beginPath();
-        ctx.ellipse(s * 0.1, 0, s * 0.12, s * 0.45, 0, 0, Math.PI * 2);
-        ctx.fillStyle = f.palette.stripe;
+        ctx.moveTo(fishSpine[1].x, fishSpine[1].y - bodyHalfWidths[1]);
+        ctx.quadraticCurveTo(dsp.x + s * 0.1, dsp.y - bodyHalfWidths[2] - dorsalH, fishSpine[3].x, fishSpine[3].y - bodyHalfWidths[3]);
+        ctx.fillStyle = f.palette.fin;
+        ctx.globalAlpha = f.opacity * 0.8;
+        ctx.fill();
+        ctx.globalAlpha = f.opacity;
+
+        // --- (d) Anal fin (attached to spine[5], below body) ---
+        var asp = fishSpine[5];
+        ctx.beginPath();
+        ctx.moveTo(fishSpine[4].x, fishSpine[4].y + bodyHalfWidths[4]);
+        ctx.quadraticCurveTo(asp.x, asp.y + bodyHalfWidths[5] + s * 0.15, fishSpine[6].x, fishSpine[6].y + bodyHalfWidths[6]);
+        ctx.fillStyle = f.palette.fin;
         ctx.globalAlpha = f.opacity * 0.7;
         ctx.fill();
         ctx.globalAlpha = f.opacity;
 
-        // Pectoral fin (small fin that fans during normal swimming)
-        var pectAngle = Math.sin(time * 3 + f.tailPhase * 0.5) * 0.3;
+        // --- (e) Pectoral fin (attached to spine[2-3], independent animation) ---
+        var psp = fishSpine[2];
+        var pectAngle = isFrozen ? 0.1 : (0.4 + Math.sin(time * 3 + f.tailPhase * 0.5) * 0.3);
+        // Fold flat during startle
+        if (startleSpeed > 0.5) pectAngle *= Math.max(0.2, 1 - startleSpeed * 0.15);
         ctx.save();
-        ctx.translate(s * 0.1, s * 0.25);
-        ctx.rotate(0.4 + pectAngle);
+        ctx.translate(psp.x, psp.y + bodyHalfWidths[2] * 0.7);
+        ctx.rotate(pectAngle);
         ctx.beginPath();
-        ctx.ellipse(0, 0, s * 0.25, s * 0.1, 0.2, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, s * 0.22, s * 0.08, 0.2, 0, Math.PI * 2);
         ctx.fillStyle = f.palette.fin;
-        ctx.globalAlpha = f.opacity * 0.6;
+        ctx.globalAlpha = f.opacity * 0.55;
         ctx.fill();
         ctx.globalAlpha = f.opacity;
         ctx.restore();
 
-        // Dorsal fin
+        // --- (f) Caudal tail fin (forked, attached to last spine segments) ---
+        var tailPt = fishSpine[segs];
+        var tailPrev = fishSpine[segs - 1];
+        var tailAngle = Math.atan2(tailPt.y - tailPrev.y, tailPt.x - tailPrev.x);
+        var tailSpread = s * 0.28 + startleSpeed * s * 0.06;
+        ctx.save();
+        ctx.translate(tailPt.x, tailPt.y);
+        ctx.rotate(tailAngle);
         ctx.beginPath();
-        ctx.moveTo(-s * 0.1, -s * 0.45);
-        ctx.quadraticCurveTo(s * 0.2, -s * 0.85, s * 0.5, -s * 0.4);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-s * 0.35, -tailSpread);
+        ctx.quadraticCurveTo(-s * 0.20, -tailSpread * 0.3, -s * 0.10, 0);
+        ctx.quadraticCurveTo(-s * 0.20, tailSpread * 0.3, -s * 0.35, tailSpread);
+        ctx.closePath();
         ctx.fillStyle = f.palette.fin;
+        ctx.globalAlpha = f.opacity * 0.85;
         ctx.fill();
+        ctx.globalAlpha = f.opacity;
+        ctx.restore();
 
-        // Eye
+        // --- (g) Eye with tap tracking ---
+        var eyeSpine = fishSpine[1];
+        var eyeX = eyeSpine.x + s * 0.05;
+        var eyeY = eyeSpine.y - bodyHalfWidths[1] * 0.25;
+        var eyeR = s * 0.10;
+
+        // Sclera
         ctx.beginPath();
-        ctx.arc(s * 0.55, -s * 0.08, s * 0.12, 0, Math.PI * 2);
+        ctx.arc(eyeX, eyeY, eyeR, 0, Math.PI * 2);
         ctx.fillStyle = '#fff';
         ctx.fill();
+
+        // Pupil: track tap position
+        var worldEyeX = x + (eyeX * d);
+        var worldEyeY = y + eyeY;
+        var toTapX = lastTapX - worldEyeX;
+        var toTapY = lastTapY - worldEyeY;
+        var toTapDist = Math.sqrt(toTapX * toTapX + toTapY * toTapY);
+        var maxPupilOff = s * 0.04;
+        var pupilOffX = 0, pupilOffY = 0;
+        if (toTapDist > 1) {
+            pupilOffX = (toTapX / toTapDist) * maxPupilOff * d; // flip with body direction
+            pupilOffY = (toTapY / toTapDist) * maxPupilOff;
+        }
+        var pupilR = isFrozen ? eyeR * 0.7 : eyeR * 0.5; // dilate during freeze
         ctx.beginPath();
-        ctx.arc(s * 0.58, -s * 0.08, s * 0.06, 0, Math.PI * 2);
+        ctx.arc(eyeX + pupilOffX, eyeY + pupilOffY, pupilR, 0, Math.PI * 2);
         ctx.fillStyle = f.palette.eye;
         ctx.fill();
 
+        // --- (h) Mouth breathing ---
+        var nosePt = fishSpine[0];
+        var mouthOpen = 0.3 + 0.7 * Math.max(0, Math.sin(time * 2 + f.breathPhase));
+        if (isFrozen || startleSpeed > 1) mouthOpen = 1.0; // gape during startle
+        var mouthW = s * 0.04 * mouthOpen;
+        ctx.beginPath();
+        ctx.arc(nosePt.x, nosePt.y, mouthW, -Math.PI * 0.4, Math.PI * 0.4);
+        ctx.strokeStyle = f.palette.eye;
+        ctx.lineWidth = s * 0.02;
+        ctx.stroke();
+
         ctx.restore();
+    }
+
+    // =========================================================================
+    // Fish wake particles
+    // =========================================================================
+
+    var WAKE_POOL_SIZE = 30;
+    var wakeParticles = [];
+    for (var _wp = 0; _wp < WAKE_POOL_SIZE; _wp++) {
+        wakeParticles.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, size: 0 });
+    }
+
+    function spawnWakeParticle(tx, ty) {
+        for (var i = 0; i < wakeParticles.length; i++) {
+            var p = wakeParticles[i];
+            if (p.active) continue;
+            p.active = true;
+            p.x = tx;
+            p.y = ty;
+            p.vx = (Math.random() - 0.5) * 0.3;
+            p.vy = -0.2 - Math.random() * 0.3;
+            p.life = 0;
+            p.maxLife = 30 + Math.random() * 20;
+            p.size = 1 + Math.random() * 2;
+            return;
+        }
+    }
+
+    function updateWakeParticles(dt) {
+        for (var i = 0; i < wakeParticles.length; i++) {
+            var p = wakeParticles[i];
+            if (!p.active) continue;
+            p.life += dt;
+            if (p.life >= p.maxLife) { p.active = false; continue; }
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+        }
+    }
+
+    function drawWakeParticles() {
+        for (var i = 0; i < wakeParticles.length; i++) {
+            var p = wakeParticles[i];
+            if (!p.active) continue;
+            var progress = p.life / p.maxLife;
+            var alpha = (1 - progress) * 0.15;
+            if (alpha < 0.005) continue;
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * (1 - progress * 0.5), 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(200, 230, 255, 1)';
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
     }
 
     // =========================================================================
@@ -2715,6 +2937,8 @@
         var rect = canvas.getBoundingClientRect();
         var px = e.clientX - rect.left;
         var py = e.clientY - rect.top;
+        lastTapX = px;
+        lastTapY = py;
 
         // Check question bubbles first (reverse draw order)
         var hitQuestion = false;
@@ -2962,6 +3186,23 @@
         return c;
     })();
 
+    // Pre-rendered fish shimmer sprite (horizontal light band for body overlay)
+    var fishShimmerSprite = (function () {
+        var w = 128, h = 64;
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        var sctx = c.getContext('2d');
+        var grad = sctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, 'rgba(255,255,255,0)');
+        grad.addColorStop(0.3, 'rgba(255,255,255,0.6)');
+        grad.addColorStop(0.5, 'rgba(255,255,255,0.9)');
+        grad.addColorStop(0.7, 'rgba(255,255,255,0.6)');
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        sctx.fillStyle = grad;
+        sctx.fillRect(0, 0, w, h);
+        return c;
+    })();
+
     // Pre-rendered streak glow (full-screen teal radial, drawn once and reused)
     var streakGlowSprite = null;
     var streakGlowW = 0, streakGlowH = 0;
@@ -3185,6 +3426,7 @@
         updateDecorativeBubbles(dt);
         updateMarineSnow(dt);
         updateFish(dt);
+        updateWakeParticles(dt);
         updateSchoolFish(dt);
         updateCreatureNudge(dt);
         updateBioParticles(dt);
@@ -3198,10 +3440,19 @@
         }
         updateParticles(dt);
 
-        // Draw fish (behind bubbles)
+        // Draw fish (behind bubbles) + spawn wake particles at tail tips
         for (var i = 0; i < fishes.length; i++) {
-            drawFish(fishes[i], time);
+            var fi = fishes[i];
+            drawFish(fi, time);
+            // Spawn 0-1 wake particles at tail tip (using last spine point in world coords)
+            if (Math.random() < 0.3) {
+                var fy = fi.y + Math.sin(time * fi.wobbleFreq + fi.wobbleOffset) * fi.wobbleAmp;
+                var tailWorldX = fi.x + fishSpine[FISH_SPINE_SEGS].x * fi.dir;
+                var tailWorldY = fy + fishSpine[FISH_SPINE_SEGS].y;
+                spawnWakeParticle(tailWorldX, tailWorldY);
+            }
         }
+        drawWakeParticles();
 
         // Draw unlocked creatures (behind bubbles, after fish)
         drawUnlockedCreatures(time);
