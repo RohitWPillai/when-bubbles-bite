@@ -14,7 +14,10 @@ window.QUESTIONS = [
                 { label: 'Fighter Jet', value: 2200,  display: '2,200 km/h', icon: '\u{2708}\u{FE0F}', color: '#e9c46a' },
                 { label: 'Bubble',      value: 5000,  display: '5,000 km/h', icon: '\u{1FAE7}', color: '#e63946' },
             ],
-            funFact: 'A collapsing cavitation bubble can approach the speed of sound in water — over 5,000 km/h!'
+            funFact: 'A collapsing cavitation bubble can approach the speed of sound in water — over 5,000 km/h!',
+            learnMore: [
+                { label: 'Bubble collapse in slow motion', url: 'https://doi.org/10.1103/APS.DFD.2018.GFM.V0090', type: 'video' }
+            ]
         }
     },
     {
@@ -32,7 +35,11 @@ window.QUESTIONS = [
                 { icon: '\u{1FAE7}', value: '4,700\u{00B0}C', label: 'Bubble!', highlight: true },
                 { icon: '\u{2600}\u{FE0F}', value: '5,500\u{00B0}C', label: 'Sun' },
             ],
-            comparison: 'The balloon in our demo collapses the same way, but real cavitation bubbles get almost as hot as the Sun!'
+            comparison: 'The balloon in our demo collapses the same way, but real cavitation bubbles get almost as hot as the Sun!',
+            learnMore: [
+                { label: 'Watch sonoluminescence', url: 'http://acoustics-research.physics.ucla.edu/wp-content/uploads/2015/02/bubble.mp4', type: 'video' },
+                { label: 'UCLA research', url: 'https://acoustics-research.physics.ucla.edu/sonoluminescence/', type: 'article' }
+            ]
         }
     },
     {
@@ -60,6 +67,10 @@ window.QUESTIONS = [
                 { icon: '\u{1F48A}', label: 'Mixes medicines' },
                 { icon: '\u{1F4A7}', label: 'Purifies water' },
                 { icon: '\u{2699}\u{FE0F}', label: 'Better propellers' },
+            ],
+            learnMore: [
+                { label: 'Water purification', url: 'https://youtu.be/RcqCgge_Fxs', type: 'video' },
+                { label: 'Sonochemistry', url: 'https://en.wikipedia.org/wiki/Sonochemistry', type: 'article' }
             ]
         }
     },
@@ -90,7 +101,11 @@ window.QUESTIONS = [
                 { icon: '\u{1F525}', value: '4,700\u{00B0}C', label: 'hot' },
                 { icon: '\u{1F50A}', value: '218 dB', label: 'loud' },
             ],
-            comparison: 'Snaps its claw so fast it creates a cavitation bubble, a shock wave, and a flash of light called sonoluminescence!'
+            comparison: 'Snaps its claw so fast it creates a cavitation bubble, a shock wave, and a flash of light called sonoluminescence!',
+            learnMore: [
+                { label: 'Pistol shrimp in slow motion', url: 'https://youtube.com/shorts/xm4-XGH95fs', type: 'video' },
+                { label: 'The full story', url: 'https://youtu.be/eXR--I99S60', type: 'video' }
+            ]
         }
     }
 ];
