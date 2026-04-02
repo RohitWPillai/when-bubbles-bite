@@ -58,7 +58,7 @@
     var HERMIT_CRAB_COUNT = 3;
     var SEA_CUCUMBER_COUNT = 3;
     var SEAHORSE_BABY_COUNT = 4;
-    var NUDIBRANCH_COUNT = 3;
+    var NUDIBRANCH_COUNT = 2;
     var CLEANER_SHRIMP_COUNT = 2;
 
     var FISH_BODY_PROFILES = [
@@ -336,6 +336,66 @@
     })();
 
     // =========================================================================
+    // SVG Creature Sprite Textures
+    // =========================================================================
+
+    function svgToTexture(svgString, scale) {
+        scale = scale || 1;
+        var encoded = encodeURIComponent(svgString);
+        var dataUri = 'data:image/svg+xml;charset=utf-8,' + encoded;
+        return PIXI.Texture.from(dataUri, { resolution: scale });
+    }
+
+    var CREATURE_SVGS = {
+        starfish: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><defs><radialGradient id="sg1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#f09070"/><stop offset="40%" stop-color="#e06848"/><stop offset="100%" stop-color="#b83828"/></radialGradient></defs><path d="M30 2 Q33 12 36 16 Q42 14 50 14 Q44 20 40 24 Q43 30 48 40 Q38 34 34 32 Q32 38 30 48 Q28 38 26 32 Q22 34 12 40 Q17 30 20 24 Q16 20 10 14 Q18 14 24 16 Q27 12 30 2 Z" fill="url(#sg1)" stroke="#903020" stroke-width="0.8" stroke-linejoin="round"/><circle cx="30" cy="24" r="6" fill="rgba(255,180,150,0.4)" stroke="rgba(200,100,70,0.3)" stroke-width="0.5"/><circle cx="30" cy="24" r="3" fill="rgba(255,200,180,0.3)"/><circle cx="30" cy="8" r="1.2" fill="rgba(255,220,200,0.35)"/><circle cx="31" cy="13" r="1" fill="rgba(255,220,200,0.3)"/><circle cx="29" cy="17" r="0.9" fill="rgba(255,220,200,0.25)"/><circle cx="46" cy="15" r="1.2" fill="rgba(255,220,200,0.35)"/><circle cx="42" cy="17" r="1" fill="rgba(255,220,200,0.3)"/><circle cx="38" cy="20" r="0.9" fill="rgba(255,220,200,0.25)"/><circle cx="45" cy="37" r="1.2" fill="rgba(255,220,200,0.35)"/><circle cx="40" cy="33" r="1" fill="rgba(255,220,200,0.3)"/><circle cx="36" cy="30" r="0.9" fill="rgba(255,220,200,0.25)"/><circle cx="15" cy="37" r="1.2" fill="rgba(255,220,200,0.35)"/><circle cx="20" cy="33" r="1" fill="rgba(255,220,200,0.3)"/><circle cx="24" cy="30" r="0.9" fill="rgba(255,220,200,0.25)"/><circle cx="14" cy="15" r="1.2" fill="rgba(255,220,200,0.35)"/><circle cx="18" cy="17" r="1" fill="rgba(255,220,200,0.3)"/><circle cx="22" cy="20" r="0.9" fill="rgba(255,220,200,0.25)"/><line x1="30" y1="18" x2="30" y2="5" stroke="rgba(160,50,30,0.25)" stroke-width="1.2" stroke-linecap="round"/><line x1="33" y1="21" x2="47" y2="15" stroke="rgba(160,50,30,0.25)" stroke-width="1.2" stroke-linecap="round"/><line x1="33" y1="27" x2="46" y2="38" stroke="rgba(160,50,30,0.25)" stroke-width="1.2" stroke-linecap="round"/><line x1="27" y1="27" x2="14" y2="38" stroke="rgba(160,50,30,0.25)" stroke-width="1.2" stroke-linecap="round"/><line x1="27" y1="21" x2="13" y2="15" stroke="rgba(160,50,30,0.25)" stroke-width="1.2" stroke-linecap="round"/></svg>',
+
+        starfishGold: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><defs><radialGradient id="sg2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#f0d070"/><stop offset="40%" stop-color="#d8b040"/><stop offset="100%" stop-color="#b89028"/></radialGradient></defs><path d="M30 2 Q33 12 36 16 Q42 14 50 14 Q44 20 40 24 Q43 30 48 40 Q38 34 34 32 Q32 38 30 48 Q28 38 26 32 Q22 34 12 40 Q17 30 20 24 Q16 20 10 14 Q18 14 24 16 Q27 12 30 2 Z" fill="url(#sg2)" stroke="#907020" stroke-width="0.8" stroke-linejoin="round"/><circle cx="30" cy="24" r="6" fill="rgba(255,230,180,0.35)" stroke="rgba(200,170,80,0.3)" stroke-width="0.5"/><circle cx="30" cy="24" r="3" fill="rgba(255,240,200,0.25)"/><circle cx="30" cy="8" r="1.2" fill="rgba(255,240,200,0.35)"/><circle cx="46" cy="15" r="1.2" fill="rgba(255,240,200,0.35)"/><circle cx="45" cy="37" r="1.2" fill="rgba(255,240,200,0.35)"/><circle cx="15" cy="37" r="1.2" fill="rgba(255,240,200,0.35)"/><circle cx="14" cy="15" r="1.2" fill="rgba(255,240,200,0.35)"/></svg>',
+
+        crab: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 50"><defs><radialGradient id="cg1" cx="50%" cy="40%" r="55%"><stop offset="0%" stop-color="#e07040"/><stop offset="50%" stop-color="#c05030"/><stop offset="100%" stop-color="#903020"/></radialGradient></defs><ellipse cx="35" cy="26" rx="18" ry="13" fill="url(#cg1)" stroke="#702818" stroke-width="0.8"/><path d="M20 20 Q27 16 35 20 Q43 16 50 20" stroke="rgba(140,50,25,0.5)" stroke-width="0.8" fill="none"/><path d="M22 26 Q28 23 35 26 Q42 23 48 26" stroke="rgba(140,50,25,0.4)" stroke-width="0.7" fill="none"/><path d="M24 31 Q30 28 35 31 Q40 28 46 31" stroke="rgba(140,50,25,0.3)" stroke-width="0.6" fill="none"/><circle cx="30" cy="22" r="1.5" fill="rgba(255,150,100,0.25)"/><circle cx="40" cy="22" r="1.3" fill="rgba(255,150,100,0.2)"/><circle cx="35" cy="18" r="1" fill="rgba(255,150,100,0.2)"/><circle cx="28" cy="28" r="1" fill="rgba(255,150,100,0.15)"/><circle cx="42" cy="28" r="1" fill="rgba(255,150,100,0.15)"/><path d="M28 16 Q26 10 22 7" stroke="#b05028" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="22" cy="6" r="3" fill="#1a1a2e" stroke="#803018" stroke-width="0.4"/><circle cx="22.5" cy="5.5" r="1.2" fill="white" opacity="0.8"/><path d="M42 16 Q44 10 48 7" stroke="#b05028" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="48" cy="6" r="3" fill="#1a1a2e" stroke="#803018" stroke-width="0.4"/><circle cx="48.5" cy="5.5" r="1.2" fill="white" opacity="0.8"/><path d="M17 24 Q10 20 6 16 Q4 13 3 10 Q2 14 4 17 Q6 20 5 22 Q3 18 1 16 Q2 20 5 23 Q8 26 12 26 Q15 26 17 24" fill="#d06038" stroke="#803018" stroke-width="0.5"/><path d="M5 17 Q6 15 5 13" stroke="rgba(100,30,15,0.5)" stroke-width="0.6" fill="none"/><path d="M4 20 Q5 18 4 16" stroke="rgba(100,30,15,0.4)" stroke-width="0.5" fill="none"/><path d="M53 24 Q60 20 64 16 Q66 13 67 10 Q68 14 66 17 Q64 20 65 22 Q67 18 69 16 Q68 20 65 23 Q62 26 58 26 Q55 26 53 24" fill="#d06038" stroke="#803018" stroke-width="0.5"/><path d="M65 17 Q64 15 65 13" stroke="rgba(100,30,15,0.5)" stroke-width="0.6" fill="none"/><path d="M66 20 Q65 18 66 16" stroke="rgba(100,30,15,0.4)" stroke-width="0.5" fill="none"/><path d="M19 28 Q14 30 10 34 Q8 36 5 40" stroke="#b05028" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="10" cy="34" r="1" fill="rgba(180,80,40,0.5)"/><path d="M20 31 Q16 34 12 38 Q10 40 8 44" stroke="#b05028" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="12" cy="38" r="1" fill="rgba(180,80,40,0.5)"/><path d="M21 34 Q18 37 15 42 Q13 44 12 48" stroke="#b05028" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="15" cy="42" r="0.9" fill="rgba(180,80,40,0.5)"/><path d="M51 28 Q56 30 60 34 Q62 36 65 40" stroke="#b05028" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="60" cy="34" r="1" fill="rgba(180,80,40,0.5)"/><path d="M50 31 Q54 34 58 38 Q60 40 62 44" stroke="#b05028" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="58" cy="38" r="1" fill="rgba(180,80,40,0.5)"/><path d="M49 34 Q52 37 55 42 Q57 44 58 48" stroke="#b05028" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="55" cy="42" r="0.9" fill="rgba(180,80,40,0.5)"/></svg>',
+
+        seaUrchin: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55 55"><defs><radialGradient id="ug1" cx="45%" cy="40%" r="50%"><stop offset="0%" stop-color="#7060c0"/><stop offset="60%" stop-color="#5040a0"/><stop offset="100%" stop-color="#3a2870"/></radialGradient><radialGradient id="ug2" cx="50%" cy="50%" r="50%"><stop offset="60%" stop-color="transparent"/><stop offset="100%" stop-color="rgba(120,100,200,0.25)"/></radialGradient></defs><circle cx="27.5" cy="28" r="16" fill="url(#ug2)"/><circle cx="27.5" cy="28" r="13" fill="url(#ug1)" stroke="rgba(100,80,180,0.5)" stroke-width="0.8"/><circle cx="27.5" cy="28" r="10" fill="rgba(90,70,160,0.4)"/><circle cx="24" cy="24" r="4" fill="rgba(140,120,220,0.3)"/><path d="M27.5 16 Q27 8 27.5 1" stroke="#8070c0" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M27.5 16 L27.5 1" stroke="#6858a8" stroke-width="0.5" fill="none" stroke-linecap="round"/><path d="M20 19 Q14 12 10 6" stroke="#8070c0" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M20 19 L10 6" stroke="#6858a8" stroke-width="0.5" fill="none" stroke-linecap="round"/><path d="M35 19 Q40 12 45 6" stroke="#8070c0" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M35 19 L45 6" stroke="#6858a8" stroke-width="0.5" fill="none" stroke-linecap="round"/><path d="M16 25 Q8 22 2 20" stroke="#8070c0" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M16 25 L2 20" stroke="#6858a8" stroke-width="0.5" fill="none" stroke-linecap="round"/><path d="M39 25 Q46 22 53 20" stroke="#8070c0" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M39 25 L53 20" stroke="#6858a8" stroke-width="0.5" fill="none" stroke-linecap="round"/><path d="M16 33 Q8 36 3 38" stroke="#8070c0" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M16 33 L3 38" stroke="#6858a8" stroke-width="0.5" fill="none" stroke-linecap="round"/><path d="M39 33 Q46 36 52 38" stroke="#8070c0" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M39 33 L52 38" stroke="#6858a8" stroke-width="0.5" fill="none" stroke-linecap="round"/><path d="M21 38 Q16 44 13 50" stroke="#8070c0" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M21 38 L13 50" stroke="#6858a8" stroke-width="0.5" fill="none" stroke-linecap="round"/><path d="M34 38 Q38 44 42 50" stroke="#8070c0" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M34 38 L42 50" stroke="#6858a8" stroke-width="0.5" fill="none" stroke-linecap="round"/><path d="M18 21 Q13 16 9 12" stroke="#7060b0" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M37 21 Q42 16 46 12" stroke="#7060b0" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M27.5 40 Q27 46 27.5 52" stroke="#7060b0" stroke-width="1.5" fill="none" stroke-linecap="round"/><circle cx="27.5" cy="0" r="2" fill="#c0b0ff" opacity="0.85"/><circle cx="9" cy="5" r="1.8" fill="#c0b0ff" opacity="0.8"/><circle cx="46" cy="5" r="1.8" fill="#c0b0ff" opacity="0.8"/><circle cx="1" cy="19" r="1.8" fill="#c0b0ff" opacity="0.75"/><circle cx="54" cy="19" r="1.8" fill="#c0b0ff" opacity="0.75"/><circle cx="2" cy="39" r="1.6" fill="#c0b0ff" opacity="0.7"/><circle cx="53" cy="39" r="1.6" fill="#c0b0ff" opacity="0.7"/><circle cx="12" cy="51" r="1.6" fill="#c0b0ff" opacity="0.7"/><circle cx="43" cy="51" r="1.6" fill="#c0b0ff" opacity="0.7"/><circle cx="8" cy="11" r="1.4" fill="#d0c0ff" opacity="0.65"/><circle cx="47" cy="11" r="1.4" fill="#d0c0ff" opacity="0.65"/><circle cx="27.5" cy="53" r="1.4" fill="#c0b0ff" opacity="0.65"/></svg>',
+
+        tubeWorms: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55 90"><defs><linearGradient id="tg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a4a48"/><stop offset="100%" stop-color="#1a3230"/></linearGradient><linearGradient id="tg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2e3c38"/><stop offset="100%" stop-color="#1c2a26"/></linearGradient><linearGradient id="tcg1" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#e06040"/><stop offset="50%" stop-color="#f08060"/><stop offset="100%" stop-color="#f8a880"/></linearGradient><linearGradient id="tcg2" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#d05838"/><stop offset="50%" stop-color="#e87858"/><stop offset="100%" stop-color="#f0a080"/></linearGradient></defs><rect x="10" y="58" width="6" height="32" rx="3" fill="url(#tg1)" stroke="rgba(20,50,45,0.6)" stroke-width="0.5"/><rect x="24" y="52" width="6" height="38" rx="3" fill="url(#tg2)" stroke="rgba(20,50,45,0.6)" stroke-width="0.5"/><rect x="38" y="60" width="6" height="30" rx="3" fill="url(#tg1)" stroke="rgba(20,50,45,0.6)" stroke-width="0.5"/><ellipse cx="13" cy="58" rx="3.5" ry="1.5" fill="#3a5a55" stroke="rgba(60,90,80,0.5)" stroke-width="0.4"/><ellipse cx="27" cy="52" rx="3.5" ry="1.5" fill="#3a5a55" stroke="rgba(60,90,80,0.5)" stroke-width="0.4"/><ellipse cx="41" cy="60" rx="3.5" ry="1.5" fill="#3a5a55" stroke="rgba(60,90,80,0.5)" stroke-width="0.4"/><path d="M13 58 Q5 46 0 34" stroke="url(#tcg1)" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M13 58 Q7 44 3 30" stroke="url(#tcg1)" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.8"/><path d="M13 58 Q10 42 8 28" stroke="url(#tcg1)" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M13 58 Q13 40 13 26" stroke="url(#tcg1)" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M13 58 Q16 42 18 28" stroke="url(#tcg1)" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M13 58 Q19 44 22 30" stroke="url(#tcg1)" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.8"/><path d="M13 58 Q21 46 26 34" stroke="url(#tcg1)" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M13 58 Q3 50 -2 40" stroke="rgba(240,130,100,0.4)" stroke-width="0.8" fill="none" stroke-linecap="round"/><path d="M13 58 Q23 50 28 40" stroke="rgba(240,130,100,0.4)" stroke-width="0.8" fill="none" stroke-linecap="round"/><path d="M27 52 Q19 38 14 22" stroke="url(#tcg1)" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M27 52 Q21 34 18 18" stroke="url(#tcg1)" stroke-width="1.3" fill="none" stroke-linecap="round" opacity="0.85"/><path d="M27 52 Q24 32 23 14" stroke="url(#tcg1)" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M27 52 Q27 30 27 10" stroke="url(#tcg1)" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M27 52 Q30 32 31 14" stroke="url(#tcg1)" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M27 52 Q33 34 36 18" stroke="url(#tcg1)" stroke-width="1.3" fill="none" stroke-linecap="round" opacity="0.85"/><path d="M27 52 Q35 38 40 22" stroke="url(#tcg1)" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M27 52 Q17 42 12 30" stroke="rgba(248,160,120,0.4)" stroke-width="0.8" fill="none" stroke-linecap="round"/><path d="M27 52 Q37 42 42 30" stroke="rgba(248,160,120,0.4)" stroke-width="0.8" fill="none" stroke-linecap="round"/><path d="M41 60 Q33 48 28 36" stroke="url(#tcg2)" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M41 60 Q36 46 34 32" stroke="url(#tcg2)" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M41 60 Q40 44 40 30" stroke="url(#tcg2)" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M41 60 Q44 44 46 30" stroke="url(#tcg2)" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M41 60 Q47 46 50 32" stroke="url(#tcg2)" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M41 60 Q49 48 54 36" stroke="url(#tcg2)" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M41 60 Q31 52 26 42" stroke="rgba(220,100,70,0.35)" stroke-width="0.8" fill="none" stroke-linecap="round"/><path d="M41 60 Q51 52 55 42" stroke="rgba(220,100,70,0.35)" stroke-width="0.8" fill="none" stroke-linecap="round"/><circle cx="0" cy="33" r="1.5" fill="#f8c0a0" opacity="0.7"/><circle cx="13" cy="25" r="1.5" fill="#f8c0a0" opacity="0.7"/><circle cx="27" cy="9" r="1.8" fill="#f8c0a0" opacity="0.75"/><circle cx="14" cy="21" r="1.3" fill="#f8c0a0" opacity="0.6"/><circle cx="40" cy="21" r="1.3" fill="#f8c0a0" opacity="0.6"/><circle cx="40" cy="29" r="1.5" fill="#f0b090" opacity="0.65"/><circle cx="54" cy="35" r="1.5" fill="#f0b090" opacity="0.65"/></svg>',
+
+        nudibranch: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 35"><defs><linearGradient id="ng1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f090c8"/><stop offset="50%" stop-color="#e868b0"/><stop offset="100%" stop-color="#d84898"/></linearGradient></defs><path d="M5 20 Q10 10 22 10 Q34 7 46 10 Q58 10 65 16 Q67 19 65 22 Q58 27 46 24 Q34 24 22 24 Q10 27 5 20" fill="url(#ng1)" stroke="rgba(200,50,120,0.6)" stroke-width="0.8"/><circle cx="25" cy="16" r="2" fill="rgba(255,255,255,0.15)"/><circle cx="40" cy="15" r="1.5" fill="rgba(255,255,255,0.12)"/><circle cx="52" cy="17" r="1.8" fill="rgba(255,255,255,0.1)"/><path d="M11 16 Q7 8 4 3" stroke="#f0b0d8" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M16 13 Q13 5 12 0" stroke="#f0b0d8" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="4" cy="2" r="2" fill="#ffc0e0" opacity="0.9"/><circle cx="12" cy="0" r="2" fill="#ffc0e0" opacity="0.9"/><path d="M24 12 Q22 5 20 1" stroke="#f068a8" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M32 11 Q31 4 30 0" stroke="#e868d0" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M40 11 Q40 4 41 0" stroke="#f068a8" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M48 12 Q49 5 51 1" stroke="#e868d0" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M55 14 Q57 8 58 3" stroke="#f068a8" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="20" cy="0" r="2.2" fill="#f0e040" opacity="0.9"/><circle cx="30" cy="0" r="2.2" fill="#40d0f0" opacity="0.9"/><circle cx="41" cy="0" r="2.2" fill="#f0e040" opacity="0.9"/><circle cx="51" cy="0" r="2.2" fill="#40d0f0" opacity="0.9"/><circle cx="58" cy="2" r="2" fill="#f0e040" opacity="0.85"/><path d="M60 18 Q63 14 66 12" stroke="rgba(240,150,200,0.5)" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M60 18 Q64 17 67 16" stroke="rgba(240,150,200,0.4)" stroke-width="1" fill="none" stroke-linecap="round"/></svg>',
+
+        cleanerShrimp: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55 40"><defs><linearGradient id="shg1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#e84848"/><stop offset="100%" stop-color="#c03030"/></linearGradient></defs><path d="M10 20 Q14 12 24 12 Q34 12 42 17 Q45 20 42 23 Q34 28 24 26 Q14 28 10 20" fill="url(#shg1)" stroke="#901818" stroke-width="0.7"/><path d="M20 14 Q20 20 20 26" stroke="rgba(160,30,30,0.3)" stroke-width="0.5" fill="none"/><path d="M26 13 Q26 20 26 27" stroke="rgba(160,30,30,0.3)" stroke-width="0.5" fill="none"/><path d="M32 13 Q32 20 32 27" stroke="rgba(160,30,30,0.3)" stroke-width="0.5" fill="none"/><path d="M12 19 Q18 14 26 14 Q34 14 41 18" stroke="white" stroke-width="2.8" fill="none" opacity="0.85"/><path d="M12 17 Q6 10 2 2" stroke="white" stroke-width="1.5" fill="none" opacity="0.8" stroke-linecap="round"/><path d="M14 15 Q9 6 6 0" stroke="white" stroke-width="1.5" fill="none" opacity="0.7" stroke-linecap="round"/><path d="M11 19 Q5 15 1 10" stroke="rgba(255,255,255,0.5)" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M19 26 Q17 30 15 34" stroke="#c83838" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M24 27 Q23 31 22 36" stroke="#c83838" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M29 27 Q30 31 30 36" stroke="#c83838" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M34 26 Q36 30 37 34" stroke="#c83838" stroke-width="1.2" fill="none" stroke-linecap="round"/><circle cx="15" cy="34.5" r="0.8" fill="rgba(255,255,255,0.4)"/><circle cx="22" cy="36.5" r="0.8" fill="rgba(255,255,255,0.4)"/><circle cx="30" cy="36.5" r="0.8" fill="rgba(255,255,255,0.4)"/><circle cx="37" cy="34.5" r="0.8" fill="rgba(255,255,255,0.4)"/><path d="M42 20 Q48 16 52 13 Q49 20 52 27 Q48 24 42 20" fill="rgba(224,80,70,0.7)" stroke="#901818" stroke-width="0.4"/><line x1="42" y1="20" x2="50" y2="15" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/><line x1="42" y1="20" x2="50" y2="25" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/><circle cx="13" cy="16" r="2.2" fill="#1a1020"/><circle cx="13.4" cy="15.5" r="0.8" fill="white" opacity="0.9"/><path d="M10 20 Q7 18 4 18" stroke="#c83838" stroke-width="1" fill="none" stroke-linecap="round"/></svg>',
+
+        jellyfish: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 90"><defs><radialGradient id="jg1" cx="50%" cy="35%" r="50%"><stop offset="0%" stop-color="#e8c4f0" stop-opacity="0.9"/><stop offset="60%" stop-color="#c490d6" stop-opacity="0.6"/><stop offset="100%" stop-color="#9b5fb0" stop-opacity="0.3"/></radialGradient></defs><ellipse cx="35" cy="30" rx="28" ry="26" fill="url(#jg1)" stroke="rgba(200,160,220,0.4)" stroke-width="0.8"/><ellipse cx="35" cy="28" rx="18" ry="16" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/><ellipse cx="35" cy="32" rx="12" ry="8" fill="rgba(200,140,230,0.2)"/><path d="M18 50 Q15 62 20 75 Q22 80 18 88" stroke="rgba(200,160,220,0.5)" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M28 52 Q25 66 28 78 Q30 84 26 90" stroke="rgba(200,160,220,0.4)" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M42 52 Q45 66 42 78 Q40 84 44 90" stroke="rgba(200,160,220,0.4)" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M52 50 Q55 62 50 75 Q48 80 52 88" stroke="rgba(200,160,220,0.5)" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M30 48 Q28 58 32 68 Q34 72 30 78" stroke="rgba(220,180,240,0.3)" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M40 48 Q42 58 38 68 Q36 72 40 78" stroke="rgba(220,180,240,0.3)" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M8 38 Q12 44 18 42 Q24 44 30 40 Q35 44 40 40 Q46 44 52 42 Q58 44 62 38" stroke="rgba(200,160,220,0.5)" stroke-width="1" fill="none"/></svg>',
+
+        anemone: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 80"><defs><radialGradient id="ag1" cx="50%" cy="80%" r="60%"><stop offset="0%" stop-color="#40c080"/><stop offset="100%" stop-color="#208050"/></radialGradient></defs><path d="M25 78 Q25 60 28 50 Q30 44 35 42 Q40 44 42 50 Q45 60 45 78" fill="url(#ag1)"/><path d="M35 42 Q32 20 24 8" stroke="#50e0a0" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M35 42 Q30 18 20 14" stroke="#50e0a0" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/><path d="M35 42 Q34 16 28 4" stroke="#60e8b0" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M35 42 Q36 16 42 4" stroke="#60e8b0" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M35 42 Q40 18 50 14" stroke="#50e0a0" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/><path d="M35 42 Q38 20 46 8" stroke="#50e0a0" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M35 42 Q26 22 16 20" stroke="#40d890" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.6"/><path d="M35 42 Q44 22 54 20" stroke="#40d890" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.6"/><circle cx="24" cy="7" r="2.5" fill="#80f0c0" opacity="0.7"/><circle cx="20" cy="13" r="2" fill="#80f0c0" opacity="0.6"/><circle cx="28" cy="3" r="2.5" fill="#80f0c0" opacity="0.7"/><circle cx="42" cy="3" r="2.5" fill="#80f0c0" opacity="0.7"/><circle cx="50" cy="13" r="2" fill="#80f0c0" opacity="0.6"/><circle cx="46" cy="7" r="2.5" fill="#80f0c0" opacity="0.7"/></svg>',
+
+        coralCluster: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120"><ellipse cx="30" cy="95" rx="25" ry="18" fill="#6b4080"/><path d="M12 90 Q18 85 24 90 Q30 85 36 90 Q42 85 48 90" stroke="rgba(120,80,150,0.6)" stroke-width="1.5" fill="none"/><path d="M15 95 Q21 90 27 95 Q33 90 39 95 Q45 90 48 95" stroke="rgba(120,80,150,0.6)" stroke-width="1.5" fill="none"/><path d="M65 105 L65 70 Q65 60 58 50 M65 70 Q65 60 72 48 M65 80 Q60 72 52 68 M65 80 Q70 72 78 66" stroke="#d05050" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="58" cy="48" r="4" fill="#e07060"/><circle cx="72" cy="46" r="4" fill="#e07060"/><circle cx="52" cy="66" r="3.5" fill="#e07060"/><circle cx="78" cy="64" r="3.5" fill="#e07060"/><path d="M85 105 L85 75" stroke="#e0a040" stroke-width="2"/><ellipse cx="85" cy="62" rx="12" ry="16" fill="none" stroke="#e0a040" stroke-width="1"/><ellipse cx="85" cy="62" rx="8" ry="12" fill="none" stroke="rgba(224,160,64,0.5)" stroke-width="0.8"/><ellipse cx="85" cy="62" rx="4" ry="8" fill="none" stroke="rgba(224,160,64,0.3)" stroke-width="0.6"/></svg>',
+
+        seahorse: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 70"><defs><linearGradient id="shsg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0a030"/><stop offset="50%" stop-color="#d4803a"/><stop offset="100%" stop-color="#b06028"/></linearGradient></defs><path d="M22 8 Q28 6 30 10 Q33 16 30 22 Q28 28 26 32 Q24 38 24 44 Q24 50 22 54 Q20 58 18 60 Q16 62 14 60 Q12 56 14 52 Q16 48 16 44" fill="url(#shsg1)" stroke="#a05520" stroke-width="0.8"/><path d="M22 8 Q18 4 14 6 Q10 8 12 12 Q14 16 18 14 Q20 12 22 12" fill="url(#shsg1)" stroke="#a05520" stroke-width="0.6"/><path d="M10 8 Q4 7 2 9" stroke="#c07030" stroke-width="1.5" fill="none" stroke-linecap="round"/><circle cx="15" cy="9" r="2.2" fill="#1a1a2e"/><circle cx="15.5" cy="8.5" r="0.8" fill="white"/><path d="M28 16 Q34 20 32 26 Q30 22 28 20" fill="rgba(240,180,80,0.6)" stroke="rgba(180,120,40,0.4)" stroke-width="0.4"/><path d="M20 24 L26 24 M19 28 L25 28 M19 32 L24 32 M19 36 L24 36 M20 40 L24 40 M20 44 L23 44 M19 48 L22 48" stroke="rgba(180,120,40,0.3)" stroke-width="0.6"/><path d="M14 60 Q10 64 12 68 Q16 70 18 66 Q20 62 16 60" fill="none" stroke="#b06028" stroke-width="1.8" stroke-linecap="round"/><path d="M20 6 Q22 2 24 4 Q26 2 25 6" fill="#d4903a" stroke="#a05520" stroke-width="0.4"/></svg>',
+
+        lionfish: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 55"><ellipse cx="32" cy="28" rx="18" ry="12" fill="#c03030" stroke="#801818" stroke-width="0.5"/><path d="M18 22 Q25 20 32 22 Q39 20 46 22" stroke="white" stroke-width="1.5" fill="none" opacity="0.7"/><path d="M16 28 Q25 26 32 28 Q39 26 48 28" stroke="white" stroke-width="1.5" fill="none" opacity="0.6"/><path d="M18 34 Q25 32 32 34 Q39 32 46 34" stroke="white" stroke-width="1.5" fill="none" opacity="0.5"/><line x1="22" y1="18" x2="18" y2="2" stroke="#d04040" stroke-width="1" opacity="0.8"/><line x1="27" y1="17" x2="25" y2="0" stroke="#d04040" stroke-width="1" opacity="0.8"/><line x1="32" y1="16" x2="32" y2="0" stroke="#d04040" stroke-width="1" opacity="0.8"/><line x1="37" y1="17" x2="39" y2="0" stroke="#d04040" stroke-width="1" opacity="0.8"/><line x1="42" y1="18" x2="46" y2="2" stroke="#d04040" stroke-width="1" opacity="0.8"/><path d="M20 28 Q8 22 2 14 Q4 18 6 24 Q8 28 10 30 Q14 30 18 30" fill="rgba(200,60,50,0.5)" stroke="rgba(200,60,50,0.3)" stroke-width="0.5"/><line x1="20" y1="28" x2="4" y2="16" stroke="rgba(180,40,40,0.4)" stroke-width="0.5"/><line x1="20" y1="28" x2="6" y2="22" stroke="rgba(180,40,40,0.4)" stroke-width="0.5"/><circle cx="22" cy="25" r="3.5" fill="#1a1020"/><circle cx="22.5" cy="24.5" r="1.5" fill="#e0c040"/><circle cx="22.5" cy="24.5" r="0.6" fill="#1a1020"/><path d="M50 28 Q58 22 66 18 Q62 28 66 38 Q58 34 50 28" fill="rgba(200,60,50,0.6)" stroke="#801818" stroke-width="0.4"/><line x1="50" y1="28" x2="64" y2="20" stroke="white" stroke-width="0.6" opacity="0.3"/><line x1="50" y1="28" x2="64" y2="36" stroke="white" stroke-width="0.6" opacity="0.3"/></svg>'
+    };
+
+    // SVG viewBox dimensions (for anchor and scale calculations)
+    var CREATURE_DIMS = {
+        starfish: { w: 60, h: 60 },
+        starfishGold: { w: 60, h: 60 },
+        crab: { w: 70, h: 50 },
+        seaUrchin: { w: 55, h: 55 },
+        tubeWorms: { w: 55, h: 90 },
+        nudibranch: { w: 70, h: 35 },
+        cleanerShrimp: { w: 55, h: 40 },
+        jellyfish: { w: 70, h: 90 },
+        anemone: { w: 70, h: 80 },
+        coralCluster: { w: 100, h: 120 },
+        seahorse: { w: 45, h: 70 },
+        lionfish: { w: 70, h: 55 }
+    };
+
+    var creatureTextures = {};
+    (function () {
+        for (var key in CREATURE_SVGS) {
+            creatureTextures[key] = svgToTexture(CREATURE_SVGS[key], 2);
+        }
+    })();
+
+    // =========================================================================
     // Container hierarchy (draw order)
     // =========================================================================
 
@@ -343,6 +403,65 @@
     bgSprite.width = W;
     bgSprite.height = H;
     pixiApp.stage.addChild(bgSprite);
+
+    // =========================================================================
+    // Terrain height function — irregular sand dunes
+    // =========================================================================
+    function terrainHeight(x) {
+        var nx = x / W;
+        var h = 0;
+        h += Math.sin(nx * Math.PI * 2.3 + 0.5) * 35;
+        h += Math.sin(nx * Math.PI * 4.7 + 1.2) * 18;
+        h += Math.sin(nx * Math.PI * 9.1 + 0.8) * 8;
+        h += Math.sin(nx * Math.PI * 17.3 + 2.1) * 3;
+        return h;
+    }
+
+    // Seafloor y-position for creatures at a given x
+    function seafloorY(x) {
+        return H - 15 - terrainHeight(x);
+    }
+
+    // Draw sand dune terrain into a texture (called once + on resize)
+    var terrainGraphics = new PIXI.Graphics();
+    pixiApp.stage.addChild(terrainGraphics);
+
+    function drawTerrainFill() {
+        terrainGraphics.clear();
+        var baseY = H - 15;
+        // Deep shadow layer
+        terrainGraphics.beginFill(0x1c2823, 0.5);
+        terrainGraphics.moveTo(0, H);
+        for (var x = 0; x <= W; x += 3) {
+            terrainGraphics.lineTo(x, baseY - terrainHeight(x) - 8);
+        }
+        terrainGraphics.lineTo(W, H);
+        terrainGraphics.endFill();
+        // Mid layer
+        terrainGraphics.beginFill(0x2d3a30, 0.35);
+        terrainGraphics.moveTo(0, H);
+        for (var x = 0; x <= W; x += 3) {
+            terrainGraphics.lineTo(x, baseY - terrainHeight(x) - 3);
+        }
+        terrainGraphics.lineTo(W, H);
+        terrainGraphics.endFill();
+        // Surface layer
+        terrainGraphics.beginFill(0x324134, 0.45);
+        terrainGraphics.moveTo(0, H);
+        for (var x = 0; x <= W; x += 3) {
+            terrainGraphics.lineTo(x, baseY - terrainHeight(x));
+        }
+        terrainGraphics.lineTo(W, H);
+        terrainGraphics.endFill();
+        // Top edge highlight
+        terrainGraphics.lineStyle(1.5, 0x50644b, 0.3);
+        terrainGraphics.moveTo(0, baseY - terrainHeight(0));
+        for (var x = 3; x <= W; x += 3) {
+            terrainGraphics.lineTo(x, baseY - terrainHeight(x));
+        }
+        terrainGraphics.lineStyle(0);
+    }
+    drawTerrainFill();
 
     var whaleGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(whaleGraphics);
@@ -403,21 +522,29 @@
         return f;
     }
 
-    var coralGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(coralGraphics);
-    coralGraphics.filters = [makeDepthFilter()];
+    // SVG-sprite containers (replace per-frame Graphics with persistent Sprite children)
+    var coralContainer = new PIXI.Container();
+    pixiApp.stage.addChild(coralContainer);
+    // coralContainer.filters = [makeDepthFilter()]; // removed: SVG sprites have ocean palette baked in
+    var coralGraphics = coralContainer; // alias for tap-interaction particle puffs
 
-    var starfishGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(starfishGraphics);
-    starfishGraphics.filters = [makeDepthFilter()];
+    var starfishContainer = new PIXI.Container();
+    pixiApp.stage.addChild(starfishContainer);
+    // starfishContainer.filters = [makeDepthFilter()];
+    var starfishGraphics = starfishContainer; // alias for biolum ring overlay
 
-    var anemoneGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(anemoneGraphics);
-    anemoneGraphics.filters = [makeDepthFilter()];
+    var anemoneContainer = new PIXI.Container();
+    pixiApp.stage.addChild(anemoneContainer);
+    // anemoneContainer.filters = [makeDepthFilter()];
+    // Overlay Graphics for clownfish drawn on top of anemone sprites
+    var anemoneOverlayGfx = new PIXI.Graphics();
+    anemoneContainer.addChild(anemoneOverlayGfx);
+    var anemoneGraphics = anemoneOverlayGfx; // alias (clownfish reuse)
 
-    var crabGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(crabGraphics);
-    crabGraphics.filters = [makeDepthFilter()];
+    var crabContainer = new PIXI.Container();
+    pixiApp.stage.addChild(crabContainer);
+    // crabContainer.filters = [makeDepthFilter()];
+    var crabGraphics = crabContainer;
 
     // --- New seafloor decorations & creatures ---
     var rockGraphics = new PIXI.Graphics();
@@ -436,13 +563,15 @@
     pixiApp.stage.addChild(spongeGraphics);
     spongeGraphics.filters = [makeDepthFilter()];
 
-    var seaUrchinGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(seaUrchinGraphics);
-    seaUrchinGraphics.filters = [makeDepthFilter()];
+    var seaUrchinContainer = new PIXI.Container();
+    pixiApp.stage.addChild(seaUrchinContainer);
+    // seaUrchinContainer.filters = [makeDepthFilter()];
+    var seaUrchinGraphics = seaUrchinContainer;
 
-    var tubeWormGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(tubeWormGraphics);
-    tubeWormGraphics.filters = [makeDepthFilter()];
+    var tubeWormContainer = new PIXI.Container();
+    pixiApp.stage.addChild(tubeWormContainer);
+    // tubeWormContainer.filters = [makeDepthFilter()];
+    var tubeWormGraphics = tubeWormContainer;
 
     var hermitCrabGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(hermitCrabGraphics);
@@ -452,17 +581,20 @@
     pixiApp.stage.addChild(seaCucumberGraphics);
     seaCucumberGraphics.filters = [makeDepthFilter()];
 
-    var seahorseBabyGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(seahorseBabyGraphics);
-    seahorseBabyGraphics.filters = [makeDepthFilter()];
+    var seahorseContainer = new PIXI.Container();
+    pixiApp.stage.addChild(seahorseContainer);
+    // seahorseContainer.filters = [makeDepthFilter()];
+    var seahorseBabyGraphics = seahorseContainer;
 
-    var cleanerShrimpGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(cleanerShrimpGraphics);
-    cleanerShrimpGraphics.filters = [makeDepthFilter()];
+    var cleanerShrimpContainer = new PIXI.Container();
+    pixiApp.stage.addChild(cleanerShrimpContainer);
+    // cleanerShrimpContainer.filters = [makeDepthFilter()];
+    var cleanerShrimpGraphics = cleanerShrimpContainer;
 
-    var nudibranchGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(nudibranchGraphics);
-    nudibranchGraphics.filters = [makeDepthFilter()];
+    var nudibranchContainer = new PIXI.Container();
+    pixiApp.stage.addChild(nudibranchContainer);
+    // nudibranchContainer.filters = [makeDepthFilter()];
+    var nudibranchGraphics = nudibranchContainer;
 
     var bubbleStreamContainer = new PIXI.Container();
     pixiApp.stage.addChild(bubbleStreamContainer);
@@ -478,11 +610,13 @@
     var electricEelGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(electricEelGraphics);
 
-    var lionfishGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(lionfishGraphics);
+    var lionfishContainer = new PIXI.Container();
+    pixiApp.stage.addChild(lionfishContainer);
+    var lionfishGraphics = lionfishContainer;
 
-    var jellyfishGraphics = new PIXI.Graphics();
-    pixiApp.stage.addChild(jellyfishGraphics);
+    var jellyfishContainer = new PIXI.Container();
+    pixiApp.stage.addChild(jellyfishContainer);
+    var jellyfishGraphics = jellyfishContainer;
 
     // --- Manta ray between jellyfish and fish ---
     var mantaGraphics = new PIXI.Graphics();
@@ -668,7 +802,7 @@
     dispSprite.texture.baseTexture.wrapMode = PIXI.WRAP_MODES.REPEAT;
     pixiApp.stage.addChild(dispSprite);
     var dispFilter = new PIXI.DisplacementFilter(dispSprite);
-    dispFilter.scale.set(8, 6);
+    dispFilter.scale.set(3, 2); // reduced from (8,6) — less distortion, crisper SVG sprites
     pixiApp.stage.filters = [dispFilter];
 
     // =========================================================================
@@ -942,7 +1076,7 @@
             for (var s = 0; s < seaweeds.length; s++) {
                 var sw = seaweeds[s];
                 var baseX = sw.xFrac * W;
-                var baseY = H;
+                var baseY = seafloorY(baseX);
                 var segLen = sw.baseHeight / sw.segments;
                 var points = sw.ropePoints;
                 points[0].x = baseX;
@@ -963,7 +1097,7 @@
             for (var s = 0; s < seaweeds.length; s++) {
                 var sw = seaweeds[s];
                 var baseX = sw.xFrac * W;
-                var baseY = H;
+                var baseY = seafloorY(baseX);
                 var segLen = sw.baseHeight / sw.segments;
                 var col = ((sw.colorR & 0xff) << 16) | ((sw.colorG & 0xff) << 8) | (sw.colorB & 0xff);
                 // Draw segments with tapering alpha
@@ -1001,22 +1135,31 @@
         propCycle: 0,
         propVy: 0,
         propYOffset: 0,
+        sprite: null,
     };
 
     function initJellyfish() {
         jellyfish.x = W * (0.3 + Math.random() * 0.4);
-        jellyfish.y = H * (0.25 + Math.random() * 0.3);
+        jellyfish.y = H * (0.15 + Math.random() * 0.25);
         jellyfish.lissAmpX = W * 0.15;
         jellyfish.lissAmpY = H * 0.1;
         jellyfish.lissA = 0.03 + Math.random() * 0.02;
         jellyfish.lissB = 0.019 + Math.random() * 0.01;
+
+        // Create SVG sprite (only once, then reuse)
+        if (!jellyfish.sprite) {
+            var sp = new PIXI.Sprite(creatureTextures.jellyfish);
+            sp.anchor.set(0.5, 0.33);
+            jellyfishContainer.addChild(sp);
+            jellyfish.sprite = sp;
+        }
     }
     initJellyfish();
 
     function drawJellyfish(time) {
         var jf = jellyfish;
-        var g = jellyfishGraphics;
-        g.clear();
+        var sp = jf.sprite;
+        if (!sp) return;
 
         var propPeriod = 3.5;
         jf.propCycle = (time % propPeriod) / propPeriod;
@@ -1034,58 +1177,12 @@
 
         var cx = jf.x + Math.sin(time * jf.lissA) * jf.lissAmpX;
         var cy = jf.y + Math.sin(time * jf.lissB) * jf.lissAmpY + jf.propYOffset;
-        var bellSquash = 1 - contraction * 0.25;
-        var bellStretch = 1 + contraction * 0.15;
-        var r = jf.bellRadius * (0.85 + 0.15 * Math.sin(time * 2.1));
+        var bellSquash = 1 - contraction * 0.15;
+        var bellStretch = 1 + contraction * 0.1;
 
-        g.alpha = jf.opacity;
-
-        // Bell
-        g.lineStyle(1, 0xc8dcff, 0.3);
-        g.beginFill(0xb4c8f0, 0.45);
-        var first = true;
-        for (var a = 0; a <= Math.PI; a += 0.05) {
-            var wobble = Math.sin(a * 3 + time * 2) * 2;
-            var bx = cx + Math.cos(a) * (r * bellStretch + wobble);
-            var by = cy - Math.sin(a) * (r * 0.7 * bellSquash + wobble * 0.5);
-            if (first) { g.moveTo(bx, by); first = false; }
-            else g.lineTo(bx, by);
-        }
-        g.closePath();
-        g.endFill();
-
-        // Subsurface scattering — warm interior glow when backlit by god rays
-        var jellyLit = isInsideGodRay(cx, cy);
-        if (jellyLit) {
-            // Warm interior glow
-            g.beginFill(0xffe4c4, 0.15);
-            g.drawEllipse(cx, cy - r * 0.15, r * bellStretch * 0.6, r * 0.4 * bellSquash);
-            g.endFill();
-            // Bright rim on top edge
-            g.lineStyle(1.5, 0xffffff, 0.12);
-            g.arc(cx, cy - r * 0.3, r * 0.5, -Math.PI * 0.8, -Math.PI * 0.2);
-        }
-
-        // Tentacles
-        var bellBottom = cy + r * 0.1;
-        for (var t = 0; t < jf.tentacles; t++) {
-            var tx = cx + (t / (jf.tentacles - 1) - 0.5) * r * 1.6 * bellStretch;
-            var tentLen = 50 + Math.sin(time * 0.7 + t) * 10;
-            var trailBias = contraction * 6;
-            var tentAlpha = 0.25 * (1 - 0.4 * (Math.abs(t - 2) / 2));
-            var tentWidth = 2 - (1.5 * (Math.abs(t - 2) / (jf.tentacles - 1)));
-            g.lineStyle(tentWidth, 0xb4a0dc, tentAlpha);
-            g.moveTo(tx, bellBottom);
-            for (var seg = 1; seg <= 4; seg++) {
-                var st = seg / 4;
-                var sway = Math.sin(time * 1.5 + t * 1.2 + seg * 0.8) * (10 * st) + trailBias * st;
-                var cpx = tx + sway * 0.6 + Math.sin(time * 0.9 + t * 2.1 + seg) * 4;
-                var cpy = bellBottom + (st - 0.12) * tentLen;
-                var ex = tx + sway;
-                var ey = bellBottom + st * tentLen;
-                g.quadraticCurveTo(cpx, cpy, ex, ey);
-            }
-        }
+        sp.position.set(cx, cy);
+        sp.scale.set(bellStretch, bellSquash);
+        sp.alpha = jf.opacity;
     }
 
     // =========================================================================
@@ -2972,7 +3069,7 @@
     var audioManager = {
         ctx: null,
         noiseBuffer: null,
-        muted: false,
+        muted: true,
         masterFilter: null,
         masterOut: null,
 
@@ -3687,116 +3784,62 @@
         { name: 'branching', color: 0xe07840, highlight: 0xf0a060 },
     ];
 
+    // Overlay Graphics for tap particle puffs (lives inside the container)
+    var coralPuffGfx = new PIXI.Graphics();
+    coralContainer.addChild(coralPuffGfx);
+
     function initCorals() {
+        // Remove old sprites (but keep puff overlay)
+        while (coralContainer.children.length > 1) {
+            coralContainer.removeChildAt(0);
+        }
         corals = [];
         for (var i = 0; i < CORAL_COUNT; i++) {
             var coralType = CORAL_TYPES[i % CORAL_TYPES.length];
+            var sp = new PIXI.Sprite(creatureTextures.coralCluster);
+            sp.anchor.set(0.5, 0.88);
+            var baseScale = (0.5 + Math.random() * 0.4);
+            sp.scale.set(baseScale);
+            var xPos = W * (0.15 + i * 0.3 + (Math.random() - 0.5) * 0.1);
+            var cyPos = seafloorY(xPos) + 15;
+            sp.position.set(xPos, cyPos);
+            coralContainer.addChildAt(sp, coralContainer.children.length - 1);
             corals.push({
-                x: W * (0.15 + i * 0.3 + (Math.random() - 0.5) * 0.1),
-                y: H,
+                x: xPos,
+                y: cyPos,
                 type: coralType,
                 height: 50 + Math.random() * 40,
                 width: 30 + Math.random() * 20,
                 swayPhase: Math.random() * Math.PI * 2,
                 branches: [],
                 tapTimer: 0,
+                sprite: sp,
+                baseScale: baseScale,
             });
-            // Generate branches
-            var c = corals[i];
-            var numBranches = 3 + Math.floor(Math.random() * 3);
-            for (var b = 0; b < numBranches; b++) {
-                c.branches.push({
-                    angle: -Math.PI / 2 + (Math.random() - 0.5) * 1.2,
-                    length: c.height * (0.3 + Math.random() * 0.4),
-                    side: Math.random() > 0.5 ? 1 : -1,
-                    yFrac: 0.3 + Math.random() * 0.5,
-                    tipRadius: 3 + Math.random() * 4,
-                });
-            }
         }
     }
     initCorals();
 
     function drawCorals(time) {
-        var g = coralGraphics;
-        g.clear();
+        coralPuffGfx.clear();
         for (var ci = 0; ci < corals.length; ci++) {
             var c = corals[ci];
             var sway = Math.sin(time * 0.3 + c.swayPhase) * 1.5;
-            var baseX = c.x + sway;
-            var baseY = c.y;
-            var topX = baseX + sway * 0.5;
-            var topY = baseY - c.height;
-
-            if (c.type.name === 'brain') {
-                // Round brain coral - blobby ellipse
-                g.beginFill(c.type.color, 0.8);
-                g.drawEllipse(baseX, baseY - c.height * 0.4, c.width * 0.7, c.height * 0.45);
-                g.endFill();
-                // Surface texture - wavy lines
-                g.lineStyle(1, c.type.highlight, 0.4);
-                for (var wl = 0; wl < 5; wl++) {
-                    var wy = baseY - c.height * 0.2 - wl * c.height * 0.1;
-                    g.moveTo(baseX - c.width * 0.4, wy);
-                    for (var wx = 0; wx < 6; wx++) {
-                        var wxp = baseX - c.width * 0.4 + wx * c.width * 0.16;
-                        g.lineTo(wxp, wy + Math.sin(wx * 2 + time * 0.5) * 3);
-                    }
-                }
-            } else if (c.type.name === 'fan') {
-                // Fan coral - flat spread
-                g.lineStyle(2, c.type.color, 0.7);
-                g.beginFill(c.type.color, 0.4);
-                g.moveTo(baseX, baseY);
-                g.quadraticCurveTo(baseX - c.width * 0.8 + sway, topY + c.height * 0.3, baseX - c.width * 0.5 + sway, topY);
-                g.quadraticCurveTo(baseX + sway * 0.5, topY - c.height * 0.15, baseX + c.width * 0.5 + sway, topY);
-                g.quadraticCurveTo(baseX + c.width * 0.8 + sway, topY + c.height * 0.3, baseX, baseY);
-                g.endFill();
-                // Veins
-                g.lineStyle(1, c.type.highlight, 0.3);
-                for (var v = 0; v < 5; v++) {
-                    var vAngle = -Math.PI * 0.3 + v * Math.PI * 0.15;
-                    g.moveTo(baseX, baseY);
-                    g.lineTo(baseX + Math.cos(vAngle) * c.height * 0.7 + sway * 0.5, baseY + Math.sin(vAngle) * c.height * 0.7);
-                }
-            } else {
-                // Branching coral - tree structure
-                // Main trunk
-                g.lineStyle(4, c.type.color, 0.8);
-                g.moveTo(baseX, baseY);
-                g.quadraticCurveTo(baseX + sway * 0.3, baseY - c.height * 0.5, topX, topY);
-                // Rounded tip
-                g.lineStyle(0);
-                g.beginFill(c.type.highlight, 0.7);
-                g.drawCircle(topX, topY, 4);
-                g.endFill();
-                // Branches
-                for (var bi = 0; bi < c.branches.length; bi++) {
-                    var br = c.branches[bi];
-                    var brStartX = baseX + (topX - baseX) * br.yFrac;
-                    var brStartY = baseY + (topY - baseY) * br.yFrac;
-                    var brEndX = brStartX + Math.cos(br.angle) * br.length * br.side + sway * 0.3;
-                    var brEndY = brStartY + Math.sin(br.angle) * br.length;
-                    g.lineStyle(2.5, c.type.color, 0.7);
-                    g.moveTo(brStartX, brStartY);
-                    g.quadraticCurveTo(brStartX + (brEndX - brStartX) * 0.5, brStartY + (brEndY - brStartY) * 0.3, brEndX, brEndY);
-                    g.lineStyle(0);
-                    g.beginFill(c.type.highlight, 0.6);
-                    g.drawCircle(brEndX, brEndY, br.tipRadius);
-                    g.endFill();
-                }
+            if (c.sprite) {
+                c.sprite.position.x = c.x + sway;
+                c.sprite.rotation = sway * 0.005;
             }
-
             // Tap particle puff
             if (c.tapTimer > 0) {
                 var tapProg = 1 - c.tapTimer;
+                var baseX = c.x + sway;
                 for (var tp = 0; tp < 6; tp++) {
                     var tpAngle = tp * Math.PI * 2 / 6 + time * 2;
                     var tpDist = tapProg * 30;
                     var tpAlpha = (1 - tapProg) * 0.5;
-                    g.beginFill(c.type.highlight, tpAlpha);
-                    g.drawCircle(baseX + Math.cos(tpAngle) * tpDist, baseY - c.height * 0.4 + Math.sin(tpAngle) * tpDist, 2);
-                    g.endFill();
+                    coralPuffGfx.beginFill(c.type.highlight, tpAlpha);
+                    coralPuffGfx.drawCircle(baseX + Math.cos(tpAngle) * tpDist, c.y - c.height * 0.4 + Math.sin(tpAngle) * tpDist, 2);
+                    coralPuffGfx.endFill();
                 }
             }
         }
@@ -3817,68 +3860,48 @@
     // =========================================================================
 
     var starfishData = [];
-    var STARFISH_COLORS = [0xe06030, 0xd04580, 0x8040c0, 0xf08030];
+    var STARFISH_TEX_KEYS = ['starfish', 'starfishGold', 'starfish', 'starfishGold'];
 
     function initStarfish() {
+        // Remove old sprites
+        while (starfishContainer.children.length > 0) {
+            starfishContainer.removeChildAt(0);
+        }
         starfishData = [];
         for (var i = 0; i < STARFISH_COUNT; i++) {
+            var texKey = STARFISH_TEX_KEYS[i % STARFISH_TEX_KEYS.length];
+            var sp = new PIXI.Sprite(creatureTextures[texKey]);
+            sp.anchor.set(0.5, 0.4);
+            var baseScale = (0.7 + Math.random() * 0.5);
+            sp.scale.set(baseScale);
+            var xPos = W * (0.1 + i * 0.25 + (Math.random() - 0.5) * 0.08);
+            var yPos = seafloorY(xPos) - Math.random() * 4;
+            sp.position.set(xPos, yPos);
+            sp.rotation = Math.random() * Math.PI * 2;
+            starfishContainer.addChild(sp);
             starfishData.push({
-                x: W * (0.1 + i * 0.25 + (Math.random() - 0.5) * 0.08),
-                y: H - 8 - Math.random() * 12,
+                x: xPos,
+                y: yPos,
                 radius: 14 + Math.random() * 8,
-                color: STARFISH_COLORS[i % STARFISH_COLORS.length],
-                rotation: Math.random() * Math.PI * 2,
+                rotation: sp.rotation,
                 ripplePhase: Math.random() * Math.PI * 2,
                 curlTimer: 0,
+                sprite: sp,
+                baseScale: baseScale,
             });
         }
     }
     initStarfish();
 
     function drawStarfish(time) {
-        var g = starfishGraphics;
-        g.clear();
         for (var si = 0; si < starfishData.length; si++) {
             var sf = starfishData[si];
+            var sp = sf.sprite;
+            if (!sp) continue;
             var isCurling = sf.curlTimer > 0;
             var curlAmount = isCurling ? Math.min(sf.curlTimer * 2, 1) : 0;
-
-            g.lineStyle(1, sf.color, 0.6);
-            for (var arm = 0; arm < 5; arm++) {
-                var armAngle = sf.rotation + arm * Math.PI * 2 / 5;
-                // Sine wave ripple: each arm has phase offset
-                var ripple = Math.sin(time * 0.8 + sf.ripplePhase + arm * Math.PI * 2 / 5) * 3;
-                var armLen = sf.radius * (1 - curlAmount * 0.5);
-                var tipX = sf.x + Math.cos(armAngle) * armLen;
-                var tipY = sf.y + Math.sin(armAngle) * armLen + ripple * (1 - curlAmount);
-
-                // Arm as bezier with width
-                var perpAngle = armAngle + Math.PI / 2;
-                var armWidth = sf.radius * 0.25;
-                var midX = sf.x + Math.cos(armAngle) * armLen * 0.5;
-                var midY = sf.y + Math.sin(armAngle) * armLen * 0.5 + ripple * 0.5 * (1 - curlAmount);
-
-                g.beginFill(sf.color, 0.75);
-                g.moveTo(sf.x + Math.cos(perpAngle) * armWidth * 0.6, sf.y + Math.sin(perpAngle) * armWidth * 0.6);
-                g.quadraticCurveTo(midX + Math.cos(perpAngle) * armWidth, midY + Math.sin(perpAngle) * armWidth, tipX, tipY);
-                g.quadraticCurveTo(midX - Math.cos(perpAngle) * armWidth, midY - Math.sin(perpAngle) * armWidth, sf.x - Math.cos(perpAngle) * armWidth * 0.6, sf.y - Math.sin(perpAngle) * armWidth * 0.6);
-                g.closePath();
-                g.endFill();
-            }
-            // Center disc
-            g.beginFill(sf.color, 0.9);
-            g.drawCircle(sf.x, sf.y, sf.radius * 0.2);
-            g.endFill();
-            // Texture dots on arms
-            g.lineStyle(0);
-            for (var dot = 0; dot < 10; dot++) {
-                var dotArm = dot % 5;
-                var dotDist = sf.radius * (0.3 + (dot / 10) * 0.4);
-                var dotAngle = sf.rotation + dotArm * Math.PI * 2 / 5;
-                g.beginFill(0xffffff, 0.15);
-                g.drawCircle(sf.x + Math.cos(dotAngle) * dotDist, sf.y + Math.sin(dotAngle) * dotDist, 1);
-                g.endFill();
-            }
+            var scaleAdjust = 1 - curlAmount * 0.3;
+            sp.scale.set(sf.baseScale * scaleAdjust);
         }
     }
 
@@ -3899,85 +3922,49 @@
     var anemones = [];
 
     function initAnemones() {
+        // Remove old sprites but keep overlay graphics (last child)
+        while (anemoneContainer.children.length > 1) {
+            anemoneContainer.removeChildAt(0);
+        }
         anemones = [];
         for (var i = 0; i < ANEMONE_COUNT; i++) {
-            var tentCount = 8 + Math.floor(Math.random() * 5);
-            var tentacles = [];
-            for (var t = 0; t < tentCount; t++) {
-                tentacles.push({
-                    angle: -Math.PI / 2 + (t / (tentCount - 1) - 0.5) * Math.PI * 0.8,
-                    length: 20 + Math.random() * 15,
-                    phase: Math.random() * Math.PI * 2,
-                    freq: 0.5 + Math.random() * 0.4,
-                    swayAmp: 4 + Math.random() * 4,
-                });
-            }
+            var sp = new PIXI.Sprite(creatureTextures.anemone);
+            sp.anchor.set(0.5, 0.975);
+            var baseScale = 0.8 + Math.random() * 0.4;
+            sp.scale.set(baseScale);
+            var xPos = W * (0.2 + i * 0.3 + (Math.random() - 0.5) * 0.1);
+            var yPos = seafloorY(xPos) - Math.random() * 2;
+            sp.position.set(xPos, yPos);
+            anemoneContainer.addChildAt(sp, anemoneContainer.children.length - 1);
             anemones.push({
-                x: W * (0.2 + i * 0.3 + (Math.random() - 0.5) * 0.1),
-                y: H,
+                x: xPos,
+                y: yPos,
                 baseWidth: 18 + Math.random() * 8,
                 baseHeight: 15 + Math.random() * 8,
-                tentacles: tentacles,
+                tentacles: [], // kept for compat
                 retractTimer: 0,
                 color: i === 0 ? 0xff6090 : (i === 1 ? 0xf08050 : 0xff80a0),
                 baseColor: i === 0 ? 0xc04060 : (i === 1 ? 0xb06030 : 0xc06080),
+                sprite: sp,
+                baseScale: baseScale,
+                swayPhase: Math.random() * Math.PI * 2,
             });
         }
     }
     initAnemones();
 
     function drawAnemones(time) {
-        var g = anemoneGraphics;
-        g.clear();
+        anemoneOverlayGfx.clear(); // clear overlay for clownfish to redraw
         for (var ai = 0; ai < anemones.length; ai++) {
             var a = anemones[ai];
+            var sp = a.sprite;
+            if (!sp) continue;
             var retractAmount = a.retractTimer > 0 ? Math.min(a.retractTimer * 3, 1) : 0;
-            var extendBack = a.retractTimer > 0 && a.retractTimer < 0.7 ? (0.7 - a.retractTimer) / 0.7 : 0;
-
-            // Base cylinder
-            g.beginFill(a.baseColor, 0.8);
-            g.moveTo(a.x - a.baseWidth * 0.5, a.y);
-            g.lineTo(a.x - a.baseWidth * 0.4, a.y - a.baseHeight);
-            g.quadraticCurveTo(a.x, a.y - a.baseHeight - 4, a.x + a.baseWidth * 0.4, a.y - a.baseHeight);
-            g.lineTo(a.x + a.baseWidth * 0.5, a.y);
-            g.closePath();
-            g.endFill();
-
-            // Oral disc at center
-            var tentBaseY = a.y - a.baseHeight;
-            g.beginFill(0x401020, 0.4);
-            g.drawEllipse(a.x, tentBaseY, a.baseWidth * 0.15, 3);
-            g.endFill();
-
-            // Tentacles
-            for (var ti = 0; ti < a.tentacles.length; ti++) {
-                var t = a.tentacles[ti];
-                var spreadX = (ti / (a.tentacles.length - 1) - 0.5) * a.baseWidth * 0.7;
-                var tentStartX = a.x + spreadX;
-                var sway = Math.sin(time * t.freq + t.phase) * t.swayAmp * (1 - retractAmount);
-                var effectiveLen = t.length * (1 - retractAmount * 0.7 + extendBack * 0.5);
-                var tentEndX = tentStartX + Math.cos(t.angle) * effectiveLen + sway;
-                var tentEndY = tentBaseY + Math.sin(t.angle) * effectiveLen;
-
-                // If retracting, pull toward center
-                if (retractAmount > 0) {
-                    tentEndX = tentEndX * (1 - retractAmount * 0.5) + a.x * retractAmount * 0.5;
-                    tentEndY = tentEndY * (1 - retractAmount * 0.3) + tentBaseY * retractAmount * 0.3;
-                }
-
-                var tentAlpha = 0.6 - (ti / a.tentacles.length) * 0.2;
-                g.lineStyle(2.5 - ti * 0.1, a.color, tentAlpha);
-                g.moveTo(tentStartX, tentBaseY);
-                var cpX = tentStartX + (tentEndX - tentStartX) * 0.5 + sway * 0.3;
-                var cpY = tentBaseY + (tentEndY - tentBaseY) * 0.3;
-                g.quadraticCurveTo(cpX, cpY, tentEndX, tentEndY);
-
-                // Bulbous tentacle tip
-                g.lineStyle(0);
-                g.beginFill(a.color, tentAlpha * 0.3);
-                g.drawCircle(tentEndX, tentEndY, 3.5);
-                g.endFill();
-            }
+            // Sway gently; retract = shrink scale
+            var sway = Math.sin(time * 0.5 + a.swayPhase) * 0.03 * (1 - retractAmount);
+            sp.rotation = sway;
+            var scaleY = a.baseScale * (1 - retractAmount * 0.5);
+            sp.scale.set(a.baseScale, scaleY);
         }
     }
 
@@ -3990,7 +3977,7 @@
                 if (a.retractTimer < 0) a.retractTimer = 0;
             }
 
-            // Tentacles catch marine snow: gently pull nearest particle toward a tentacle tip
+            // Tentacles catch marine snow: gently pull nearest particle toward anemone
             if (a.retractTimer <= 0) {
                 var tentBaseY2 = a.y - a.baseHeight;
                 var bestDist = 40;
@@ -4026,11 +4013,23 @@
     var CRAB_STATES = { SCUTTLE: 0, PAUSE: 1, STARTLE: 2 };
 
     function initCrabs() {
+        // Remove old sprites
+        while (crabContainer.children.length > 0) {
+            crabContainer.removeChildAt(0);
+        }
         crabs = [];
         for (var i = 0; i < CRAB_COUNT; i++) {
+            var sp = new PIXI.Sprite(creatureTextures.crab);
+            sp.anchor.set(0.5, 0.52);
+            var baseScale = 0.7 + Math.random() * 0.3;
+            sp.scale.set(baseScale);
+            var xPos = W * (0.15 + i * 0.35 + (Math.random() - 0.5) * 0.1);
+            var yPos = seafloorY(xPos) - 2;
+            sp.position.set(xPos, yPos);
+            crabContainer.addChild(sp);
             crabs.push({
-                x: W * (0.15 + i * 0.35 + (Math.random() - 0.5) * 0.1),
-                y: H - 5 - Math.random() * 8,
+                x: xPos,
+                y: yPos,
                 dir: Math.random() > 0.5 ? 1 : -1,
                 state: CRAB_STATES.SCUTTLE,
                 stateTimer: 2 + Math.random() * 2,
@@ -4041,121 +4040,27 @@
                 legPhase: Math.random() * Math.PI * 2,
                 clawAngle: 0,
                 startleSpeed: 0,
+                sprite: sp,
+                baseScale: baseScale,
             });
         }
     }
     initCrabs();
 
     function drawCrabs(time) {
-        var g = crabGraphics;
-        g.clear();
         for (var ci = 0; ci < crabs.length; ci++) {
             var c = crabs[ci];
-            var x = c.x;
-            var y = c.y;
-
-            // Body - flattened ellipse
-            g.beginFill(c.color, 0.85);
-            g.drawEllipse(x, y, c.bodyWidth, c.bodyHeight);
-            g.endFill();
-
-            // Eye stalks
-            var eyeOff = c.bodyWidth * 0.4;
-            g.lineStyle(1.5, c.color, 0.9);
-            g.moveTo(x - eyeOff * c.dir, y - c.bodyHeight * 0.5);
-            g.lineTo(x - eyeOff * c.dir, y - c.bodyHeight - 5);
-            g.moveTo(x + eyeOff * c.dir, y - c.bodyHeight * 0.5);
-            g.lineTo(x + eyeOff * c.dir, y - c.bodyHeight - 5);
-            // Eyes (with tracking toward lastTapX/lastTapY)
-            var eyeTrackDx = lastTapX - x;
-            var eyeTrackDy = lastTapY - y;
-            var eyeTrackDist = Math.sqrt(eyeTrackDx * eyeTrackDx + eyeTrackDy * eyeTrackDy);
-            var eyeOff2 = eyeTrackDist > 1 ? 1 : 0;
-            var eyeShiftX = eyeOff2 * (eyeTrackDx / eyeTrackDist) * 1;
-            var eyeShiftY = eyeOff2 * (eyeTrackDy / eyeTrackDist) * 0.5;
-            g.lineStyle(0);
-            g.beginFill(0x1a1a2e, 0.8);
-            g.drawCircle(x - eyeOff * c.dir + eyeShiftX, y - c.bodyHeight - 5 + eyeShiftY, 1.5);
-            g.drawCircle(x + eyeOff * c.dir + eyeShiftX, y - c.bodyHeight - 5 + eyeShiftY, 1.5);
-            g.endFill();
-
-            // Claws
-            var clawRaise = c.state === CRAB_STATES.PAUSE ? Math.sin(time * 2) * 0.3 : 0;
-            var isStartled = c.state === CRAB_STATES.STARTLE;
-            var bothClawsUp = isStartled ? 0.6 : 0;
-
-            // Left claw
-            var lcAngle = -Math.PI * 0.3 + clawRaise - bothClawsUp;
-            var lcx = x - c.bodyWidth * 0.9;
-            var lcy = y - c.bodyHeight * 0.3;
-            g.lineStyle(2, c.color, 0.9);
-            g.moveTo(lcx, lcy);
-            g.lineTo(lcx + Math.cos(lcAngle) * 8, lcy + Math.sin(lcAngle) * 8);
-            // Pincer
-            g.lineStyle(1.5, c.color, 0.8);
-            var pinTipX = lcx + Math.cos(lcAngle) * 8;
-            var pinTipY = lcy + Math.sin(lcAngle) * 8;
-            var pinOpen = isStartled ? 0.4 : 0.15 + Math.sin(time * 3) * 0.1;
-            g.moveTo(pinTipX, pinTipY);
-            g.lineTo(pinTipX + Math.cos(lcAngle - pinOpen) * 5, pinTipY + Math.sin(lcAngle - pinOpen) * 5);
-            g.moveTo(pinTipX, pinTipY);
-            g.lineTo(pinTipX + Math.cos(lcAngle + pinOpen) * 5, pinTipY + Math.sin(lcAngle + pinOpen) * 5);
-            // Left claw serration
-            g.lineStyle(0.5, c.color, 0.5);
-            for (var lcs = 0; lcs < 3; lcs++) {
-                var lcsT = (lcs + 1) / 4;
-                var lcsX = pinTipX + Math.cos(lcAngle - pinOpen) * 5 * lcsT;
-                var lcsY = pinTipY + Math.sin(lcAngle - pinOpen) * 5 * lcsT;
-                var perpAng = lcAngle - pinOpen + Math.PI * 0.5;
-                g.moveTo(lcsX, lcsY);
-                g.lineTo(lcsX + Math.cos(perpAng) * 1.5, lcsY + Math.sin(perpAng) * 1.5);
-            }
-
-            // Right claw
-            var rcAngle = -Math.PI * 0.7 - clawRaise + bothClawsUp;
-            var rcx = x + c.bodyWidth * 0.9;
-            var rcy = y - c.bodyHeight * 0.3;
-            g.lineStyle(2, c.color, 0.9);
-            g.moveTo(rcx, rcy);
-            g.lineTo(rcx + Math.cos(rcAngle) * 8, rcy + Math.sin(rcAngle) * 8);
-            var rpinTipX = rcx + Math.cos(rcAngle) * 8;
-            var rpinTipY = rcy + Math.sin(rcAngle) * 8;
-            g.lineStyle(1.5, c.color, 0.8);
-            g.moveTo(rpinTipX, rpinTipY);
-            g.lineTo(rpinTipX + Math.cos(rcAngle - pinOpen) * 5, rpinTipY + Math.sin(rcAngle - pinOpen) * 5);
-            g.moveTo(rpinTipX, rpinTipY);
-            g.lineTo(rpinTipX + Math.cos(rcAngle + pinOpen) * 5, rpinTipY + Math.sin(rcAngle + pinOpen) * 5);
-            // Right claw serration
-            g.lineStyle(0.5, c.color, 0.5);
-            for (var rcs = 0; rcs < 3; rcs++) {
-                var rcsT = (rcs + 1) / 4;
-                var rcsX = rpinTipX + Math.cos(rcAngle - pinOpen) * 5 * rcsT;
-                var rcsY = rpinTipY + Math.sin(rcAngle - pinOpen) * 5 * rcsT;
-                var rperpAng = rcAngle - pinOpen + Math.PI * 0.5;
-                g.moveTo(rcsX, rcsY);
-                g.lineTo(rcsX + Math.cos(rperpAng) * 1.5, rcsY + Math.sin(rperpAng) * 1.5);
-            }
-
-            // Legs (3 pairs)
+            var sp = c.sprite;
+            if (!sp) continue;
+            sp.position.set(c.x, c.y);
+            // Flip based on direction
+            sp.scale.x = c.dir > 0 ? c.baseScale : -c.baseScale;
+            // Walking bob
             var isWalking = c.state === CRAB_STATES.SCUTTLE || c.state === CRAB_STATES.STARTLE;
-            for (var leg = 0; leg < 3; leg++) {
-                var legX = x + (leg - 1) * c.bodyWidth * 0.35;
-                var walkCycle = isWalking ? Math.sin(time * 6 + c.legPhase + leg * 1.2) * 3 : 0;
-
-                // Left side legs
-                g.lineStyle(1, c.color, 0.7);
-                g.moveTo(legX, y + c.bodyHeight * 0.3);
-                var lkneeX = legX - c.bodyWidth * 0.4 + walkCycle;
-                var lkneeY = y + c.bodyHeight * 0.1;
-                g.lineTo(lkneeX, lkneeY);
-                g.lineTo(lkneeX - 3, y + c.bodyHeight * 0.8);
-
-                // Right side legs
-                g.moveTo(legX, y + c.bodyHeight * 0.3);
-                var rkneeX = legX + c.bodyWidth * 0.4 - walkCycle;
-                var rkneeY = y + c.bodyHeight * 0.1;
-                g.lineTo(rkneeX, rkneeY);
-                g.lineTo(rkneeX + 3, y + c.bodyHeight * 0.8);
+            if (isWalking) {
+                sp.rotation = Math.sin(time * 6 + c.legPhase) * 0.05;
+            } else {
+                sp.rotation = 0;
             }
         }
     }
@@ -4188,6 +4093,9 @@
                 }
             }
 
+            // Track terrain as crab walks
+            c.y = seafloorY(c.x) - 2;
+
             // Sand puff particles when scuttling
             if ((c.state === CRAB_STATES.SCUTTLE || c.state === CRAB_STATES.STARTLE) && Math.random() < 0.15) {
                 spawnWakeParticle(c.x + (Math.random() - 0.5) * c.bodyWidth, c.y + c.bodyHeight * 0.5);
@@ -4207,8 +4115,10 @@
         bubbleStreams = [];
         bubbleStreamParticles = [];
         for (var i = 0; i < BUBBLE_STREAM_COUNT; i++) {
+            var bsx = W * (0.1 + Math.random() * 0.8);
             bubbleStreams.push({
-                x: W * (0.1 + Math.random() * 0.8),
+                x: bsx,
+                y: seafloorY(bsx),
                 emitTimer: 0,
                 emitRate: 0.5 + Math.random() * 0.5,
             });
@@ -4241,7 +4151,7 @@
                     if (p.active) continue;
                     p.active = true;
                     p.x = s.x + (Math.random() - 0.5) * 4;
-                    p.y = H;
+                    p.y = s.y;
                     p.speed = 0.4 + Math.random() * 0.3;
                     p.wobblePhase = Math.random() * Math.PI * 2;
                     p.size = 1 + Math.random() * 1.5;
@@ -4273,9 +4183,10 @@
     function initRocks() {
         rocks = [];
         for (var i = 0; i < ROCK_COUNT; i++) {
+            var rx = W * (0.02 + Math.random() * 0.96);
             var r = {
-                x: W * (0.02 + Math.random() * 0.96),
-                y: H - 2 - Math.random() * 10,
+                x: rx,
+                y: seafloorY(rx) - 2,
                 width: 5 + Math.random() * 15,
                 height: 3 + Math.random() * 8,
                 color: 0x3a3a40 + Math.floor(Math.random() * 0x151515),
@@ -4331,9 +4242,10 @@
     function initShells() {
         shells = [];
         for (var i = 0; i < SHELL_COUNT; i++) {
+            var sx = W * (0.03 + Math.random() * 0.94);
             shells.push({
-                x: W * (0.03 + Math.random() * 0.94),
-                y: H - 1 - Math.random() * 5,
+                x: sx,
+                y: seafloorY(sx) - 1,
                 size: 3 + Math.random() * 5,
                 color: SHELL_COLORS[Math.floor(Math.random() * SHELL_COLORS.length)],
                 rotation: Math.random() * Math.PI * 2,
@@ -4393,7 +4305,7 @@
                     color: 0x208040 + Math.floor(Math.random() * 0x103020)
                 });
             }
-            seaGrassPatches.push({ x: cx, y: H, blades: blades });
+            seaGrassPatches.push({ x: cx, y: seafloorY(cx), blades: blades });
         }
     }
     initSeaGrass();
@@ -4432,9 +4344,10 @@
     function initSponges() {
         sponges = [];
         for (var i = 0; i < SPONGE_COUNT; i++) {
+            var spx = W * (0.08 + Math.random() * 0.84);
             sponges.push({
-                x: W * (0.08 + Math.random() * 0.84),
-                y: H,
+                x: spx,
+                y: seafloorY(spx),
                 width: 8 + Math.random() * 8,
                 height: 20 + Math.random() * 25,
                 color: SPONGE_COLORS[i % SPONGE_COLORS.length],
@@ -4482,50 +4395,41 @@
 
     var seaUrchins = [];
     function initSeaUrchins() {
+        // Remove old sprites
+        while (seaUrchinContainer.children.length > 0) {
+            seaUrchinContainer.removeChildAt(0);
+        }
         seaUrchins = [];
         for (var i = 0; i < SEA_URCHIN_COUNT; i++) {
-            var numSpines = 12 + Math.floor(Math.random() * 5);
-            var spines = [];
-            for (var sp = 0; sp < numSpines; sp++) {
-                spines.push({
-                    angle: (sp / numSpines) * Math.PI * 2,
-                    length: 8 + Math.random() * 4,
-                    phase: Math.random() * Math.PI * 2
-                });
-            }
+            var sp = new PIXI.Sprite(creatureTextures.seaUrchin);
+            sp.anchor.set(0.5, 0.51);
+            var baseScale = 0.3 + Math.random() * 0.2;
+            sp.scale.set(baseScale);
+            var xPos = W * (0.05 + Math.random() * 0.9);
+            var yPos = seafloorY(xPos) - 2;
+            sp.position.set(xPos, yPos);
+            seaUrchinContainer.addChild(sp);
             seaUrchins.push({
-                x: W * (0.05 + Math.random() * 0.9),
-                y: H - 3 - Math.random() * 6,
+                x: xPos,
+                y: yPos,
                 radius: 5 + Math.random() * 3,
                 color: 0x1a1025 + Math.floor(Math.random() * 0x101020),
-                spines: spines,
-                spineExtend: 0
+                spines: [],
+                spineExtend: 0,
+                sprite: sp,
+                baseScale: baseScale,
             });
         }
     }
     initSeaUrchins();
 
     function drawSeaUrchins(time) {
-        var g = seaUrchinGraphics;
-        g.clear();
         for (var i = 0; i < seaUrchins.length; i++) {
             var su = seaUrchins[i];
-            var extend = 1 + su.spineExtend * 0.5;
-            // Body
-            g.beginFill(su.color, 0.85);
-            g.drawCircle(su.x, su.y, su.radius);
-            g.endFill();
-            // Spines
-            g.lineStyle(0.8, su.color, 0.7);
-            for (var sp = 0; sp < su.spines.length; sp++) {
-                var s = su.spines[sp];
-                var wave = Math.sin(time * 1.5 + s.phase) * 0.1;
-                var ang = s.angle + wave;
-                var len = s.length * extend;
-                g.moveTo(su.x + Math.cos(ang) * su.radius, su.y + Math.sin(ang) * su.radius);
-                g.lineTo(su.x + Math.cos(ang) * (su.radius + len), su.y + Math.sin(ang) * (su.radius + len));
-            }
-            g.lineStyle(0);
+            var sp = su.sprite;
+            if (!sp) continue;
+            var extend = 1 + su.spineExtend * 0.3;
+            sp.scale.set(su.baseScale * extend);
         }
     }
 
@@ -4545,56 +4449,48 @@
 
     var tubeWorms = [];
     function initTubeWorms() {
+        // Remove old sprites
+        while (tubeWormContainer.children.length > 0) {
+            tubeWormContainer.removeChildAt(0);
+        }
         tubeWorms = [];
         for (var i = 0; i < TUBE_WORM_COUNT; i++) {
-            var numRays = 8 + Math.floor(Math.random() * 6);
+            var sp = new PIXI.Sprite(creatureTextures.tubeWorms);
+            sp.anchor.set(0.5, 1.0);
+            var baseScale = 0.7 + Math.random() * 0.4;
+            sp.scale.set(baseScale);
+            var xPos = W * (0.06 + Math.random() * 0.88);
+            var yPos = seafloorY(xPos) - 1;
+            sp.position.set(xPos, yPos);
+            tubeWormContainer.addChild(sp);
             tubeWorms.push({
-                x: W * (0.06 + Math.random() * 0.88),
-                y: H - 1,
+                x: xPos,
+                y: yPos,
                 tubeHeight: 15 + Math.random() * 10,
                 tubeWidth: 3 + Math.random() * 2,
                 fanRadius: 10 + Math.random() * 8,
-                numRays: numRays,
+                numRays: 8 + Math.floor(Math.random() * 6),
                 color: [0xd04050, 0xe06040, 0xc05080][Math.floor(Math.random() * 3)],
                 phase: Math.random() * Math.PI * 2,
                 retractTimer: 0,
-                fanHeight: 1 // 0=retracted, 1=full
+                fanHeight: 1,
+                sprite: sp,
+                baseScale: baseScale,
             });
         }
     }
     initTubeWorms();
 
     function drawTubeWorms(time) {
-        var g = tubeWormGraphics;
-        g.clear();
         for (var i = 0; i < tubeWorms.length; i++) {
             var tw = tubeWorms[i];
-            // Tube
-            g.beginFill(0x3a3530, 0.8);
-            g.drawRect(tw.x - tw.tubeWidth * 0.5, tw.y - tw.tubeHeight, tw.tubeWidth, tw.tubeHeight);
-            g.endFill();
-            // Fan (only if extended)
-            if (tw.fanHeight > 0.05) {
-                var fanY = tw.y - tw.tubeHeight;
-                var fh = tw.fanHeight;
-                for (var r = 0; r < tw.numRays; r++) {
-                    var ang = -Math.PI + (r / (tw.numRays - 1)) * Math.PI;
-                    var wave = Math.sin(time * 2 + tw.phase + r * 0.5) * 0.08;
-                    var rayLen = tw.fanRadius * fh;
-                    g.lineStyle(1, tw.color, 0.7 * fh);
-                    g.moveTo(tw.x, fanY);
-                    g.lineTo(tw.x + Math.cos(ang + wave) * rayLen, fanY + Math.sin(ang + wave) * rayLen);
-                    // Feathery tip
-                    var tipX = tw.x + Math.cos(ang + wave) * rayLen;
-                    var tipY = fanY + Math.sin(ang + wave) * rayLen;
-                    g.lineStyle(0.5, tw.color, 0.4 * fh);
-                    g.moveTo(tipX, tipY);
-                    g.lineTo(tipX + Math.cos(ang - 0.3) * 3 * fh, tipY + Math.sin(ang - 0.3) * 3 * fh);
-                    g.moveTo(tipX, tipY);
-                    g.lineTo(tipX + Math.cos(ang + 0.3) * 3 * fh, tipY + Math.sin(ang + 0.3) * 3 * fh);
-                }
-                g.lineStyle(0);
-            }
+            var sp = tw.sprite;
+            if (!sp) continue;
+            // Animate scale Y to simulate fan retraction
+            sp.scale.y = tw.baseScale * tw.fanHeight;
+            // Slight sway
+            var sway = Math.sin(time * 2 + tw.phase) * 0.02;
+            sp.rotation = sway;
         }
     }
 
@@ -4621,9 +4517,10 @@
     function initHermitCrabs() {
         hermitCrabs = [];
         for (var i = 0; i < HERMIT_CRAB_COUNT; i++) {
+            var hcx = W * (0.1 + Math.random() * 0.8);
             hermitCrabs.push({
-                x: W * (0.1 + Math.random() * 0.8),
-                y: H - 3 - Math.random() * 4,
+                x: hcx,
+                y: seafloorY(hcx) - 2,
                 dir: Math.random() > 0.5 ? 1 : -1,
                 speed: 0.02 + Math.random() * 0.02,
                 shellSize: 6 + Math.random() * 3,
@@ -4695,6 +4592,8 @@
                 hc.x += hc.speed * hc.dir * dt;
                 if (hc.x < 15 || hc.x > W - 15) hc.dir *= -1;
             }
+            // Track terrain as hermit crab walks
+            hc.y = seafloorY(hc.x) - 2;
         }
     }
 
@@ -4706,9 +4605,10 @@
     function initSeaCucumbers() {
         seaCucumbers = [];
         for (var i = 0; i < SEA_CUCUMBER_COUNT; i++) {
+            var scx = W * (0.1 + Math.random() * 0.8);
             seaCucumbers.push({
-                x: W * (0.1 + Math.random() * 0.8),
-                y: H - 3 - Math.random() * 4,
+                x: scx,
+                y: seafloorY(scx) - 2,
                 length: 18 + Math.random() * 10,
                 height: 5 + Math.random() * 3,
                 color: 0x504030 + Math.floor(Math.random() * 0x202010),
@@ -4756,6 +4656,8 @@
                 sc.x += 0.05 * sc.dir * dt;
                 if (sc.x < 20 || sc.x > W - 20) sc.dir *= -1;
             }
+            // Track terrain as sea cucumber inches along
+            sc.y = seafloorY(sc.x) - 2;
         }
     }
 
@@ -5188,9 +5090,18 @@
 
     var seahorseBabies = [];
     function initSeahorseBabies() {
+        // Remove old sprites
+        while (seahorseContainer.children.length > 0) {
+            seahorseContainer.removeChildAt(0);
+        }
         seahorseBabies = [];
         for (var i = 0; i < SEAHORSE_BABY_COUNT; i++) {
             var swIdx = Math.floor(Math.random() * Math.max(1, seaweeds.length));
+            var sp = new PIXI.Sprite(creatureTextures.seahorse);
+            sp.anchor.set(0.5, 0.5);
+            var baseScale = 0.35 + Math.random() * 0.15;
+            sp.scale.set(baseScale);
+            seahorseContainer.addChild(sp);
             seahorseBabies.push({
                 attachedSeaweedIdx: swIdx,
                 attachFrac: 0.4 + Math.random() * 0.4,
@@ -5199,20 +5110,21 @@
                 dorFinPhase: Math.random() * Math.PI * 2,
                 detachTimer: 0,
                 floatY: 0,
-                dir: Math.random() > 0.5 ? 1 : -1
+                dir: Math.random() > 0.5 ? 1 : -1,
+                sprite: sp,
+                baseScale: baseScale,
             });
         }
     }
     initSeahorseBabies();
 
     function drawSeahorseBabies(time) {
-        var g = seahorseBabyGraphics;
-        g.clear();
         for (var i = 0; i < seahorseBabies.length; i++) {
             var sh = seahorseBabies[i];
+            var sp = sh.sprite;
+            if (!sp) continue;
             var sx, sy;
             if (sh.detachTimer > 0) {
-                // Floating
                 sx = sh.floatX || 0;
                 sy = sh.floatY || 0;
             } else if (seaweeds.length > 0) {
@@ -5221,43 +5133,12 @@
                 sy = H - sw.baseHeight * sh.attachFrac;
             } else {
                 sx = W * 0.5;
-                sy = H * 0.7;
+                sy = H * 0.5;
             }
-            var s = sh.size;
-            // Body (small seahorse shape)
-            g.beginFill(sh.color, 0.8);
-            g.drawEllipse(sx, sy, s * 0.35, s * 0.6);
-            g.endFill();
-            // Head
-            g.beginFill(sh.color, 0.85);
-            g.drawCircle(sx + sh.dir * s * 0.15, sy - s * 0.5, s * 0.25);
-            g.endFill();
-            // Snout
-            g.lineStyle(0.6, sh.color, 0.7);
-            g.moveTo(sx + sh.dir * s * 0.3, sy - s * 0.5);
-            g.lineTo(sx + sh.dir * s * 0.55, sy - s * 0.55);
-            g.lineStyle(0);
-            // Curled tail
-            g.lineStyle(1, sh.color, 0.6);
-            g.moveTo(sx, sy + s * 0.5);
-            var tailCurl = Math.sin(time * 0.5 + i) * 0.3;
-            g.bezierCurveTo(
-                sx - sh.dir * s * 0.3, sy + s * 0.7,
-                sx - sh.dir * s * 0.4, sy + s * 0.5 + tailCurl * 3,
-                sx - sh.dir * s * 0.2, sy + s * 0.4
-            );
-            g.lineStyle(0);
-            // Dorsal fin flutter
-            var finFlutter = Math.sin(time * 8 + sh.dorFinPhase) * 2;
-            g.lineStyle(0.5, sh.color, 0.5);
-            g.moveTo(sx - sh.dir * s * 0.1, sy - s * 0.2);
-            g.lineTo(sx - sh.dir * s * 0.25, sy - s * 0.3 + finFlutter);
-            g.lineTo(sx - sh.dir * s * 0.1, sy);
-            g.lineStyle(0);
-            // Eye
-            g.beginFill(0x101010, 0.8);
-            g.drawCircle(sx + sh.dir * s * 0.2, sy - s * 0.52, 0.7);
-            g.endFill();
+            sp.position.set(sx, sy);
+            sp.scale.x = sh.dir > 0 ? sh.baseScale : -sh.baseScale;
+            // Gentle bob
+            sp.rotation = Math.sin(time * 0.5 + i) * 0.1;
         }
     }
 
@@ -5271,7 +5152,6 @@
                 sh.floatX += Math.sin(animTime * 2 + i) * 0.3 * dt;
                 if (sh.detachTimer <= 0) {
                     sh.detachTimer = 0;
-                    // Re-attach to a random seaweed
                     sh.attachedSeaweedIdx = Math.floor(Math.random() * Math.max(1, seaweeds.length));
                     sh.attachFrac = 0.3 + Math.random() * 0.5;
                 }
@@ -5284,12 +5164,25 @@
     // =========================================================================
 
     var cleanerShrimps = [];
+    // Overlay Graphics for cleaning fish (kept as Graphics since it's a separate animated element)
+    var cleanerShrimpOverlayGfx = new PIXI.Graphics();
+    cleanerShrimpContainer.addChild(cleanerShrimpOverlayGfx);
+
     function initCleanerShrimp() {
+        // Remove old sprites (keep overlay graphics at end)
+        while (cleanerShrimpContainer.children.length > 1) {
+            cleanerShrimpContainer.removeChildAt(0);
+        }
         cleanerShrimps = [];
         for (var i = 0; i < CLEANER_SHRIMP_COUNT; i++) {
-            // Position on coral
             var cx = W * (0.15 + Math.random() * 0.7);
             var cy = H - 20 - Math.random() * 30;
+            var sp = new PIXI.Sprite(creatureTextures.cleanerShrimp);
+            sp.anchor.set(0.5, 0.5);
+            var baseScale = 0.6 + Math.random() * 0.2;
+            sp.scale.set(baseScale);
+            sp.position.set(cx, cy);
+            cleanerShrimpContainer.addChildAt(sp, cleanerShrimpContainer.children.length - 1);
             cleanerShrimps.push({
                 x: cx, y: cy,
                 size: 8 + Math.random() * 2,
@@ -5298,63 +5191,36 @@
                 danceTimer: 0,
                 cleanTimer: 15 + Math.random() * 5,
                 cleaning: false,
-                cleanFishX: 0, cleanFishY: 0, cleanPhase: 0
+                cleanFishX: 0, cleanFishY: 0, cleanPhase: 0,
+                sprite: sp,
+                baseScale: baseScale,
             });
         }
     }
     initCleanerShrimp();
 
     function drawCleanerShrimp(time) {
-        var g = cleanerShrimpGraphics;
-        g.clear();
+        cleanerShrimpOverlayGfx.clear();
         for (var i = 0; i < cleanerShrimps.length; i++) {
             var cs = cleanerShrimps[i];
+            var sp = cs.sprite;
+            if (!sp) continue;
             var danceOff = cs.danceTimer > 0 ? Math.sin(time * 12) * 2 : 0;
-            var sx = cs.x + danceOff;
-            var sy = cs.y;
-            var s = cs.size;
-            // Body (red/white banded)
-            g.beginFill(0xd03020, 0.8);
-            g.drawEllipse(sx, sy, s * 0.5, s * 0.25);
-            g.endFill();
-            // White band
-            g.beginFill(0xf0e8e0, 0.7);
-            g.drawEllipse(sx, sy, s * 0.2, s * 0.22);
-            g.endFill();
-            // Antennae
-            var antSpeed = cs.danceTimer > 0 ? cs.antennaSpeed * 2 : cs.antennaSpeed;
-            g.lineStyle(0.5, 0xf0e8e0, 0.6);
-            var a1 = Math.sin(time * antSpeed + cs.antennaPhase) * 0.4;
-            var a2 = Math.sin(time * antSpeed + cs.antennaPhase + 1.5) * 0.4;
-            g.moveTo(sx + s * 0.4, sy);
-            g.lineTo(sx + s * 0.4 + Math.cos(-0.6 + a1) * s, sy + Math.sin(-0.6 + a1) * s);
-            g.moveTo(sx + s * 0.4, sy);
-            g.lineTo(sx + s * 0.4 + Math.cos(-0.3 + a2) * s * 0.8, sy + Math.sin(-0.3 + a2) * s * 0.8);
-            g.lineStyle(0);
-            // Legs
-            g.lineStyle(0.4, 0xd03020, 0.5);
-            for (var l = 0; l < 3; l++) {
-                g.moveTo(sx - s * 0.2 + l * s * 0.2, sy + s * 0.2);
-                g.lineTo(sx - s * 0.2 + l * s * 0.2, sy + s * 0.4);
-            }
-            g.lineStyle(0);
-            // Eye
-            g.beginFill(0x101010, 0.8);
-            g.drawCircle(sx + s * 0.35, sy - s * 0.1, 0.8);
-            g.endFill();
-            // Cleaning animation: draw small fish nearby
+            sp.position.set(cs.x + danceOff, cs.y);
+            sp.rotation = cs.danceTimer > 0 ? Math.sin(time * 8) * 0.1 : 0;
+            // Cleaning animation: draw small fish nearby (uses overlay graphics)
             if (cs.cleaning) {
                 var cfx = cs.cleanFishX;
                 var cfy = cs.cleanFishY;
-                g.beginFill(0x80a0c0, 0.5);
-                g.drawEllipse(cfx, cfy, 12, 5);
-                g.endFill();
-                g.beginFill(0x80a0c0, 0.4);
-                g.moveTo(cfx - 12, cfy);
-                g.lineTo(cfx - 18, cfy - 4);
-                g.lineTo(cfx - 18, cfy + 4);
-                g.closePath();
-                g.endFill();
+                cleanerShrimpOverlayGfx.beginFill(0x80a0c0, 0.5);
+                cleanerShrimpOverlayGfx.drawEllipse(cfx, cfy, 12, 5);
+                cleanerShrimpOverlayGfx.endFill();
+                cleanerShrimpOverlayGfx.beginFill(0x80a0c0, 0.4);
+                cleanerShrimpOverlayGfx.moveTo(cfx - 12, cfy);
+                cleanerShrimpOverlayGfx.lineTo(cfx - 18, cfy - 4);
+                cleanerShrimpOverlayGfx.lineTo(cfx - 18, cfy + 4);
+                cleanerShrimpOverlayGfx.closePath();
+                cleanerShrimpOverlayGfx.endFill();
             }
         }
     }
@@ -5396,84 +5262,35 @@
         bodySize: 30,
         displayTimer: 0,
         finSpread: 1,
-        phase: 0
+        phase: 0,
+        sprite: null,
     };
 
     function initLionfish() {
         lionfish.dir = Math.random() > 0.5 ? 1 : -1;
         lionfish.x = lionfish.dir > 0 ? -60 : W + 60;
-        lionfish.y = H * (0.35 + Math.random() * 0.25);
+        lionfish.y = H * (0.30 + Math.random() * 0.20);
         lionfish.displayTimer = 0;
         lionfish.finSpread = 1;
+        if (!lionfish.sprite) {
+            var sp = new PIXI.Sprite(creatureTextures.lionfish);
+            sp.anchor.set(0.46, 0.51);
+            sp.scale.set(1.2);
+            lionfishContainer.addChild(sp);
+            lionfish.sprite = sp;
+        }
     }
     initLionfish();
 
     function drawLionfish(time) {
-        var g = lionfishGraphics;
-        g.clear();
         var lf = lionfish;
-        var s = lf.bodySize;
-        var spread = lf.finSpread;
-        // Pectoral fin rays (fan)
-        var numRays = 12;
-        for (var r = 0; r < numRays; r++) {
-            var ang = (-Math.PI * 0.4 + (r / (numRays - 1)) * Math.PI * 0.8) * lf.dir;
-            var rayLen = s * (0.8 + Math.sin(time * 1.5 + r * 0.5) * 0.1) * spread;
-            var wave = Math.sin(time * 2 + r * 0.8) * 0.05;
-            // Ray line
-            g.lineStyle(0.8, 0xf0e0d0, 0.6);
-            var rx = lf.x - lf.dir * s * 0.2;
-            var ry = lf.y;
-            g.moveTo(rx, ry);
-            g.lineTo(rx + Math.cos(ang + wave + Math.PI * 0.5) * rayLen, ry + Math.sin(ang + wave + Math.PI * 0.5) * rayLen);
-            // Membrane between rays (semi-transparent)
-            if (r > 0) {
-                var prevAng = (-Math.PI * 0.4 + ((r - 1) / (numRays - 1)) * Math.PI * 0.8) * lf.dir;
-                var prevWave = Math.sin(time * 2 + (r - 1) * 0.8) * 0.05;
-                g.lineStyle(0);
-                g.beginFill(0xc03020, 0.15 * spread);
-                g.moveTo(rx, ry);
-                g.lineTo(rx + Math.cos(prevAng + prevWave + Math.PI * 0.5) * rayLen, ry + Math.sin(prevAng + prevWave + Math.PI * 0.5) * rayLen);
-                g.lineTo(rx + Math.cos(ang + wave + Math.PI * 0.5) * rayLen, ry + Math.sin(ang + wave + Math.PI * 0.5) * rayLen);
-                g.closePath();
-                g.endFill();
-            }
-        }
-        g.lineStyle(0);
-        // Dorsal spines
-        for (var d = 0; d < 6; d++) {
-            var dAng = -Math.PI * 0.5 + (d - 2.5) * 0.15 * lf.dir;
-            var dLen = s * 0.6 * spread;
-            g.lineStyle(0.6, 0xf0e0d0, 0.5);
-            g.moveTo(lf.x + lf.dir * (d - 3) * 3, lf.y - s * 0.15);
-            g.lineTo(lf.x + lf.dir * (d - 3) * 3 + Math.cos(dAng) * dLen, lf.y - s * 0.15 + Math.sin(dAng) * dLen);
-        }
-        g.lineStyle(0);
-        // Body (striped)
-        g.beginFill(0xc03020, 0.85);
-        g.drawEllipse(lf.x, lf.y, s * 0.4, s * 0.25);
-        g.endFill();
-        // Stripes
-        for (var st = 0; st < 4; st++) {
-            g.beginFill(0xf0e0d0, 0.5);
-            var stX = lf.x - s * 0.25 + st * s * 0.15;
-            g.drawRect(stX, lf.y - s * 0.2, s * 0.04, s * 0.4);
-            g.endFill();
-        }
-        // Tail
-        g.beginFill(0xc03020, 0.6);
-        g.moveTo(lf.x - lf.dir * s * 0.4, lf.y);
-        g.lineTo(lf.x - lf.dir * s * 0.7, lf.y - s * 0.15);
-        g.lineTo(lf.x - lf.dir * s * 0.7, lf.y + s * 0.15);
-        g.closePath();
-        g.endFill();
-        // Eye
-        g.beginFill(0xf0d050, 0.9);
-        g.drawCircle(lf.x + lf.dir * s * 0.25, lf.y - s * 0.05, 2.5);
-        g.endFill();
-        g.beginFill(0x101010, 1);
-        g.drawCircle(lf.x + lf.dir * s * 0.26, lf.y - s * 0.05, 1.2);
-        g.endFill();
+        var sp = lf.sprite;
+        if (!sp) return;
+        sp.position.set(lf.x, lf.y);
+        // Flip based on direction; scale up slightly during display
+        var displayScale = 1.2 * lf.finSpread;
+        sp.scale.x = lf.dir > 0 ? displayScale : -displayScale;
+        sp.scale.y = displayScale;
     }
 
     function updateLionfish(dt) {
@@ -5483,8 +5300,8 @@
         lf.y += Math.sin(animTime * 0.3 + lf.phase) * 0.08 * dt;
         lf.phase += dtSec;
         // Reverse at edges
-        if (lf.dir > 0 && lf.x > W + 80) { lf.dir = -1; lf.y = H * (0.35 + Math.random() * 0.25); }
-        if (lf.dir < 0 && lf.x < -80) { lf.dir = 1; lf.y = H * (0.35 + Math.random() * 0.25); }
+        if (lf.dir > 0 && lf.x > W + 80) { lf.dir = -1; lf.y = H * (0.30 + Math.random() * 0.20); }
+        if (lf.dir < 0 && lf.x < -80) { lf.dir = 1; lf.y = H * (0.30 + Math.random() * 0.20); }
         // Display timer
         if (lf.displayTimer > 0) {
             lf.displayTimer -= dtSec;
@@ -5501,20 +5318,37 @@
 
     var nudibranchs = [];
     var NUDIBRANCH_COLORS = [0xff40a0, 0x40a0ff, 0xff8020];
+    // Overlay Graphics for color puff particles
+    var nudibranchPuffGfx = new PIXI.Graphics();
+    nudibranchContainer.addChild(nudibranchPuffGfx);
+
     function initNudibranch() {
+        // Remove old sprites (keep puff overlay)
+        while (nudibranchContainer.children.length > 1) {
+            nudibranchContainer.removeChildAt(0);
+        }
         nudibranchs = [];
         for (var i = 0; i < NUDIBRANCH_COUNT; i++) {
+            var sp = new PIXI.Sprite(creatureTextures.nudibranch);
+            sp.anchor.set(0.5, 0.57);
+            var baseScale = 0.25 + Math.random() * 0.15;
+            sp.scale.set(baseScale);
+            var xPos = W * (0.1 + Math.random() * 0.8);
+            var yPos = seafloorY(xPos) - 10 - Math.random() * 30;
+            sp.position.set(xPos, yPos);
+            nudibranchContainer.addChildAt(sp, nudibranchContainer.children.length - 1);
             nudibranchs.push({
-                x: W * (0.1 + Math.random() * 0.8),
-                y: H - 5 - Math.random() * 15,
+                x: xPos,
+                y: yPos,
                 dir: Math.random() > 0.5 ? 1 : -1,
                 speed: 0.01 + Math.random() * 0.01,
                 size: 10 + Math.random() * 5,
                 color: NUDIBRANCH_COLORS[i % NUDIBRANCH_COLORS.length],
                 curlTimer: 0,
-                colorParticles: []
+                colorParticles: [],
+                sprite: sp,
+                baseScale: baseScale,
             });
-            // Pre-allocate color puff particles
             for (var p = 0; p < 5; p++) {
                 nudibranchs[i].colorParticles.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, size: 0 });
             }
@@ -5523,47 +5357,22 @@
     initNudibranch();
 
     function drawNudibranch(time) {
-        var g = nudibranchGraphics;
-        g.clear();
+        nudibranchPuffGfx.clear();
         for (var i = 0; i < nudibranchs.length; i++) {
             var nb = nudibranchs[i];
-            var s = nb.size;
+            var sp = nb.sprite;
+            if (!sp) continue;
             var curl = nb.curlTimer > 0 ? Math.min(1, nb.curlTimer) : 0;
-            var bodyLen = s * (1 - curl * 0.4);
-            var bodyH = s * 0.3 * (1 + curl * 0.5);
-            // Body
-            g.beginFill(nb.color, 0.8);
-            g.drawEllipse(nb.x, nb.y, bodyLen * 0.5, bodyH);
-            g.endFill();
-            // Cerata (frilly gills on back)
-            if (curl < 0.5) {
-                for (var c = 0; c < 5; c++) {
-                    var cx = nb.x - bodyLen * 0.3 + c * bodyLen * 0.15;
-                    var cy = nb.y - bodyH;
-                    var cerataH = s * 0.15 * (1 - curl);
-                    g.lineStyle(0.6, nb.color, 0.6);
-                    g.moveTo(cx, cy);
-                    g.lineTo(cx + Math.sin(time * 3 + c) * 1.5, cy - cerataH);
-                }
-                g.lineStyle(0);
-            }
-            // Rhinophores (antennae)
-            if (curl < 0.3) {
-                g.lineStyle(0.8, nb.color, 0.7);
-                var headX = nb.x + nb.dir * bodyLen * 0.4;
-                g.moveTo(headX, nb.y - bodyH * 0.5);
-                g.lineTo(headX + nb.dir * 2, nb.y - bodyH - s * 0.2);
-                g.moveTo(headX + nb.dir * 1.5, nb.y - bodyH * 0.5);
-                g.lineTo(headX + nb.dir * 3.5, nb.y - bodyH - s * 0.15);
-                g.lineStyle(0);
-            }
-            // Color puff particles
+            sp.position.set(nb.x, nb.y);
+            sp.scale.x = nb.dir > 0 ? nb.baseScale * (1 - curl * 0.3) : -nb.baseScale * (1 - curl * 0.3);
+            sp.scale.y = nb.baseScale * (1 + curl * 0.3);
+            // Color puff particles (overlay graphics)
             for (var p = 0; p < nb.colorParticles.length; p++) {
                 var cp = nb.colorParticles[p];
                 if (!cp.active) continue;
-                g.beginFill(nb.color, 0.4 * Math.max(0, cp.life));
-                g.drawCircle(cp.x, cp.y, cp.size);
-                g.endFill();
+                nudibranchPuffGfx.beginFill(nb.color, 0.4 * Math.max(0, cp.life));
+                nudibranchPuffGfx.drawCircle(cp.x, cp.y, cp.size);
+                nudibranchPuffGfx.endFill();
             }
         }
     }
@@ -6639,6 +6448,7 @@
         bloomSprite.width = W;
         bloomSprite.height = H;
         creatureFlashText.position.set(W / 2, H * 0.12);
+        drawTerrainFill();
         initSeaweed();
         initJellyfish();
         initCorals();
