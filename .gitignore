@@ -1,0 +1,10 @@
+# Project management files (local only)
+CLAUDE.md
+CREATIVE.md
+PROJECT_CONTEXT.md
+.claude-agents/
+handoffs/
+_preview/
+node_modules/
+package.json
+package-lock.json

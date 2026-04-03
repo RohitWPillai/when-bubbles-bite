@@ -2794,6 +2794,8 @@
     var currentQuestionIds = [];
     var pendingRespawnIds = [];
     var respawnTimerIds = [];
+    var answeredIds = {};
+    var currentWave = 1;
 
     // Display objects for question bubbles
     var questionBubbleObjects = [];
@@ -2837,9 +2839,19 @@
         }
     }
 
+    function checkWaveTransition() {
+        var wave1Qs = QUESTIONS.filter(function (q) { return !q.wave || q.wave === 1; });
+        var allWave1Answered = wave1Qs.every(function (q) { return answeredIds[q.id]; });
+        if (allWave1Answered && currentWave === 1) {
+            currentWave = 2;
+        }
+    }
+
     function getAvailableQuestions() {
         var now = Date.now();
         return QUESTIONS.filter(function (q) {
+            var qWave = q.wave || 1;
+            if (qWave !== currentWave) return false;
             if (currentQuestionIds.indexOf(q.id) !== -1) return false;
             if (questionCooldowns[q.id] && now < questionCooldowns[q.id]) return false;
             return true;
@@ -3354,6 +3366,8 @@
         idleWarningShown = false;
         if (idleWarningEl) idleWarningEl.classList.add('hidden');
         questionCooldowns = {};
+        answeredIds = {};
+        currentWave = 1;
         pendingRespawnIds = [];
         streak = 0;
         unlockedCreatures = {};
@@ -3440,6 +3454,8 @@
                         applyStreakEffects(bubble.x, bubble.y);
                         unlockCreature(bubble.questionId);
                         questionCooldowns[bubble.questionId] = Date.now() + QUESTION_COOLDOWN_MS;
+                        answeredIds[bubble.questionId] = true;
+                        checkWaveTransition();
                         var poppedId = bubble.questionId;
                         bubble.active = false;
                         bubble.popPhase = null;
