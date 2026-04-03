@@ -32,6 +32,43 @@
 
     <div id="idle-warning" class="hidden">Still exploring? Tap to keep going!</div>
 
+    <div id="exit-survey" class="hidden">
+        <div id="survey-content">
+            <h2>Thanks for exploring!</h2>
+            <p class="survey-q">What surprised you most?</p>
+            <div class="survey-options" id="survey-surprise">
+                <button data-value="speed">&#x1F4A8; Speed</button>
+                <button data-value="heat">&#x1F525; Heat</button>
+                <button data-value="animals">&#x1F990; Animals</button>
+                <button data-value="destruction">&#x1F4A5; Destruction</button>
+            </div>
+            <p class="survey-q">Did you learn something new?</p>
+            <div class="survey-options" id="survey-learned">
+                <button data-value="yes">&#x1F603; Yes!</button>
+                <button data-value="abit">&#x1F914; A bit</button>
+                <button data-value="no">&#x1F610; Not really</button>
+            </div>
+            <p class="survey-q">How old are you?</p>
+            <div class="survey-options" id="survey-age">
+                <button data-value="under10">Under 10</button>
+                <button data-value="10-14">10&#x2013;14</button>
+                <button data-value="15+">15+</button>
+                <button data-value="adult">Adult</button>
+            </div>
+            <button id="survey-done">Done &#x2014; thanks! &#x1F389;</button>
+        </div>
+    </div>
+
+    <div id="data-export" class="hidden">
+        <div id="export-content">
+            <h2>Session Data</h2>
+            <p id="export-stats"></p>
+            <button id="export-copy-btn">Copy JSON to clipboard</button>
+            <button id="export-clear-btn">Clear all data</button>
+            <button id="export-close-btn">Close</button>
+        </div>
+    </div>
+
     <button id="mute-btn" aria-label="Toggle sound">
         <span id="mute-icon">&#x1F507;</span>
     </button>

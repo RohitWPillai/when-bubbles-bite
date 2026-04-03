@@ -811,11 +811,37 @@
     // App state
     // =========================================================================
 
-    var State = { SPLASH: 0, BUBBLES: 1, ANSWER: 2 };
+    var State = { SPLASH: 0, BUBBLES: 1, ANSWER: 2, SURVEY: 3 };
     var appState = State.SPLASH;
     var lastInteraction = Date.now();
     var animTime = 0;
     var streak = 0;
+
+    // =========================================================================
+    // Session logging
+    // =========================================================================
+
+    var allSessions = [];
+    try {
+        var stored = localStorage.getItem('bubblequiz-sessions');
+        if (stored) allSessions = JSON.parse(stored);
+    } catch (e) { /* ignore parse errors */ }
+
+    function createSessionLog() {
+        return {
+            startTime: null,
+            endTime: null,
+            questions: [],
+            learnMoreTaps: [],
+            wave2Reached: false,
+            idleResets: 0,
+            survey: null
+        };
+    }
+
+    var sessionLog = createSessionLog();
+    var answerViewStart = null;
+    var lastAnsweredQuestionId = null;
     var unlockedCreatures = {};
     var creatureFlashStr = '';
     var creatureFlashAlpha = 0;
@@ -2844,6 +2870,7 @@
         var allWave1Answered = wave1Qs.every(function (q) { return answeredIds[q.id]; });
         if (allWave1Answered && currentWave === 1) {
             currentWave = 2;
+            sessionLog.wave2Reached = true;
         }
     }
 
@@ -3211,6 +3238,14 @@
         if (!question) return;
         appState = State.ANSWER;
         lastInteraction = Date.now();
+        answerViewStart = Date.now();
+        lastAnsweredQuestionId = questionId;
+        sessionLog.questions.push({
+            id: questionId,
+            tappedAt: Date.now(),
+            answeredDuration: null,
+            wave: question.wave || 1
+        });
         contentEl.innerHTML = '';
         switch (question.answerType) {
             case 'bar-chart': renderBarChart(question.answer); break;
@@ -3311,7 +3346,7 @@
         for (var i = 0; i < links.length; i++) {
             var link = links[i];
             var icon = link.type === 'video' ? '\u25B6' : '\u2197';
-            html += '<a class="learn-more-link" href="' + escapeHTML(link.url) + '" target="_blank" rel="noopener"><span class="learn-more-icon">' + icon + '</span>' + escapeHTML(link.label) + '</a>';
+            html += '<a class="learn-more-link" href="' + escapeHTML(link.url) + '" target="_blank" rel="noopener" data-link-label="' + escapeHTML(link.label) + '" data-link-url="' + escapeHTML(link.url) + '"><span class="learn-more-icon">' + icon + '</span>' + escapeHTML(link.label) + '</a>';
         }
         html += '</div></div>';
         contentEl.insertAdjacentHTML('beforeend', html);
@@ -3319,12 +3354,33 @@
         if (el) {
             answerAnimTimerIds.push(setTimeout(function () { el.classList.add('visible'); }, 2000));
         }
+        // Log learn-more link taps via event delegation
+        var linkEls = contentEl.querySelectorAll('.learn-more-link');
+        for (var j = 0; j < linkEls.length; j++) {
+            (function (linkEl) {
+                linkEl.addEventListener('pointerdown', function () {
+                    sessionLog.learnMoreTaps.push({
+                        questionId: lastAnsweredQuestionId,
+                        label: linkEl.getAttribute('data-link-label'),
+                        url: linkEl.getAttribute('data-link-url'),
+                        tappedAt: Date.now()
+                    });
+                });
+            })(linkEls[j]);
+        }
     }
 
     function hideAnswer() {
         overlayEl.classList.add('hidden');
         appState = State.BUBBLES;
         lastInteraction = Date.now();
+        if (answerViewStart && sessionLog.questions.length > 0) {
+            var lastEntry = sessionLog.questions[sessionLog.questions.length - 1];
+            if (lastEntry.id === lastAnsweredQuestionId && lastEntry.answeredDuration === null) {
+                lastEntry.answeredDuration = Date.now() - answerViewStart;
+            }
+        }
+        answerViewStart = null;
         for (var i = 0; i < answerAnimTimerIds.length; i++) clearTimeout(answerAnimTimerIds[i]);
         answerAnimTimerIds = [];
         for (var i = 0; i < squeezeTimerIds.length; i++) clearTimeout(squeezeTimerIds[i]);
@@ -3358,13 +3414,34 @@
 
     var splashEl = document.getElementById('splash-screen');
 
+    function saveSession() {
+        if (sessionLog.startTime) {
+            sessionLog.endTime = Date.now();
+            // Close any open answer duration
+            if (answerViewStart && sessionLog.questions.length > 0) {
+                var lastEntry = sessionLog.questions[sessionLog.questions.length - 1];
+                if (lastEntry.answeredDuration === null) {
+                    lastEntry.answeredDuration = Date.now() - answerViewStart;
+                }
+            }
+            answerViewStart = null;
+            allSessions.push(sessionLog);
+            try { localStorage.setItem('bubblequiz-sessions', JSON.stringify(allSessions)); } catch (e) { /* storage full */ }
+        }
+        var prevIdleResets = sessionLog.idleResets;
+        sessionLog = createSessionLog();
+        sessionLog.idleResets = prevIdleResets + 1;
+    }
+
     function showSplash() {
         appState = State.SPLASH;
         audioManager.setDroneVolume(0);
         splashEl.classList.remove('hidden');
         overlayEl.classList.add('hidden');
+        if (exitSurveyEl) exitSurveyEl.classList.add('hidden');
         idleWarningShown = false;
         if (idleWarningEl) idleWarningEl.classList.add('hidden');
+        if (surveyAutoTimer) { clearTimeout(surveyAutoTimer); surveyAutoTimer = null; }
         questionCooldowns = {};
         answeredIds = {};
         currentWave = 1;
@@ -3406,6 +3483,7 @@
         splashEl.classList.add('hidden');
         appState = State.BUBBLES;
         lastInteraction = Date.now();
+        sessionLog.startTime = Date.now();
         initQuestionBubbles();
         spawnAllCreatures();
     }
@@ -3778,16 +3856,19 @@
     // =========================================================================
 
     function checkIdle() {
+        if (appState === State.SURVEY) return;
         if (appState !== State.BUBBLES && appState !== State.ANSWER) return;
         var elapsed = Date.now() - lastInteraction;
-        if (elapsed > IDLE_WARNING_MS && !idleWarningShown) {
-            idleWarningShown = true;
-            if (idleWarningEl) idleWarningEl.classList.remove('hidden');
-        }
         if (elapsed > IDLE_TIMEOUT_MS) {
             idleWarningShown = false;
             if (idleWarningEl) idleWarningEl.classList.add('hidden');
-            showSplash();
+            // Show survey if there was any interaction this session, otherwise go straight to splash
+            if (sessionLog.startTime && sessionLog.questions.length > 0) {
+                showExitSurvey();
+            } else {
+                saveSession();
+                showSplash();
+            }
         }
     }
 
@@ -6270,6 +6351,172 @@
             }
         }
     }
+
+    // =========================================================================
+    // Exit survey
+    // =========================================================================
+
+    var exitSurveyEl = document.getElementById('exit-survey');
+    var surveyDoneBtn = document.getElementById('survey-done');
+    var surveyAutoTimer = null;
+    var surveyResponses = { surprise: null, learned: null, age: null };
+
+    var surveyGroups = [
+        { el: document.getElementById('survey-surprise'), key: 'surprise' },
+        { el: document.getElementById('survey-learned'), key: 'learned' },
+        { el: document.getElementById('survey-age'), key: 'age' }
+    ];
+
+    // Wire up survey option buttons
+    for (var sg = 0; sg < surveyGroups.length; sg++) {
+        (function (group) {
+            var buttons = group.el.querySelectorAll('button');
+            for (var sb = 0; sb < buttons.length; sb++) {
+                (function (btn) {
+                    btn.addEventListener('pointerdown', function (e) {
+                        e.stopPropagation(); e.preventDefault();
+                        lastInteraction = Date.now();
+                        // Reset auto-dismiss timer on any interaction
+                        if (surveyAutoTimer) { clearTimeout(surveyAutoTimer); }
+                        surveyAutoTimer = setTimeout(dismissSurvey, 15000);
+                        // Deselect siblings, select this one
+                        var siblings = group.el.querySelectorAll('button');
+                        for (var k = 0; k < siblings.length; k++) siblings[k].classList.remove('selected');
+                        btn.classList.add('selected');
+                        surveyResponses[group.key] = btn.getAttribute('data-value');
+                    });
+                })(buttons[sb]);
+            }
+        })(surveyGroups[sg]);
+    }
+
+    surveyDoneBtn.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        dismissSurvey();
+    });
+
+    // Prevent taps on the survey background from falling through
+    exitSurveyEl.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        lastInteraction = Date.now();
+        if (surveyAutoTimer) { clearTimeout(surveyAutoTimer); }
+        surveyAutoTimer = setTimeout(dismissSurvey, 15000);
+    });
+
+    function showExitSurvey() {
+        appState = State.SURVEY;
+        overlayEl.classList.add('hidden');
+        idleWarningShown = false;
+        if (idleWarningEl) idleWarningEl.classList.add('hidden');
+        // Reset survey UI
+        surveyResponses = { surprise: null, learned: null, age: null };
+        var allBtns = exitSurveyEl.querySelectorAll('.survey-options button');
+        for (var i = 0; i < allBtns.length; i++) allBtns[i].classList.remove('selected');
+        exitSurveyEl.classList.remove('hidden');
+        // Auto-dismiss after 15 seconds if no interaction
+        if (surveyAutoTimer) clearTimeout(surveyAutoTimer);
+        surveyAutoTimer = setTimeout(dismissSurvey, 15000);
+    }
+
+    function dismissSurvey() {
+        if (surveyAutoTimer) { clearTimeout(surveyAutoTimer); surveyAutoTimer = null; }
+        sessionLog.survey = {
+            surprise: surveyResponses.surprise,
+            learned: surveyResponses.learned,
+            age: surveyResponses.age
+        };
+        saveSession();
+        exitSurveyEl.classList.add('hidden');
+        showSplash();
+    }
+
+    // =========================================================================
+    // Data export (triple-tap mute button)
+    // =========================================================================
+
+    var dataExportEl = document.getElementById('data-export');
+    var exportStatsEl = document.getElementById('export-stats');
+    var exportCopyBtn = document.getElementById('export-copy-btn');
+    var exportClearBtn = document.getElementById('export-clear-btn');
+    var exportCloseBtn = document.getElementById('export-close-btn');
+    var muteTapTimes = [];
+
+    muteBtn.addEventListener('pointerdown', function () {
+        var now = Date.now();
+        muteTapTimes.push(now);
+        // Keep only taps in the last 1 second
+        muteTapTimes = muteTapTimes.filter(function (t) { return now - t < 1000; });
+        if (muteTapTimes.length >= 3) {
+            muteTapTimes = [];
+            showDataExport();
+        }
+    });
+
+    function showDataExport() {
+        var count = allSessions.length;
+        var dateRange = 'No sessions yet';
+        if (count > 0) {
+            var first = allSessions[0].startTime ? new Date(allSessions[0].startTime).toLocaleDateString() : 'unknown';
+            var last = allSessions[count - 1].startTime ? new Date(allSessions[count - 1].startTime).toLocaleDateString() : 'unknown';
+            dateRange = first + ' to ' + last;
+        }
+        exportStatsEl.innerHTML = count + ' sessions logged<br>Date range: ' + dateRange;
+        dataExportEl.classList.remove('hidden');
+    }
+
+    exportCopyBtn.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        var json = JSON.stringify(allSessions, null, 2);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(json).then(function () {
+                exportCopyBtn.textContent = 'Copied!';
+                setTimeout(function () { exportCopyBtn.textContent = 'Copy JSON to clipboard'; }, 2000);
+            });
+        } else {
+            // Fallback for older WebKit
+            var ta = document.createElement('textarea');
+            ta.value = json;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            exportCopyBtn.textContent = 'Copied!';
+            setTimeout(function () { exportCopyBtn.textContent = 'Copy JSON to clipboard'; }, 2000);
+        }
+    });
+
+    exportClearBtn.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        if (exportClearBtn.getAttribute('data-confirm') === 'true') {
+            allSessions = [];
+            try { localStorage.removeItem('bubblequiz-sessions'); } catch (err) { /* ignore */ }
+            exportClearBtn.textContent = 'Cleared!';
+            exportClearBtn.removeAttribute('data-confirm');
+            setTimeout(function () {
+                exportClearBtn.textContent = 'Clear data';
+                exportStatsEl.innerHTML = '0 sessions logged<br>Date range: No sessions yet';
+            }, 2000);
+        } else {
+            exportClearBtn.setAttribute('data-confirm', 'true');
+            exportClearBtn.textContent = 'Tap again to confirm';
+            setTimeout(function () {
+                exportClearBtn.textContent = 'Clear data';
+                exportClearBtn.removeAttribute('data-confirm');
+            }, 3000);
+        }
+    });
+
+    exportCloseBtn.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        dataExportEl.classList.add('hidden');
+    });
+
+    dataExportEl.addEventListener('pointerdown', function (e) {
+        if (e.target === dataExportEl) {
+            e.preventDefault();
+            dataExportEl.classList.add('hidden');
+        }
+    });
 
     // =========================================================================
     // Game loop (PixiJS ticker)
