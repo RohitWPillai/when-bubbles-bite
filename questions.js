@@ -107,5 +107,95 @@ window.QUESTIONS = [
                 { label: 'The full story', url: 'https://youtu.be/eXR--I99S60', type: 'video' }
             ]
         }
+    },
+    // =========================================================================
+    // Wave 2 — appears after all wave-1 bubbles have been answered
+    // =========================================================================
+    {
+        id: 'space',
+        wave: 2,
+        bubbleText: 'What happens to bubbles in space?',
+        answerType: 'big-reveal',
+        answer: {
+            label: 'In the vacuum of space, water does something wild...',
+            number: 'It boils AND freezes!',
+            unit: '',
+            badges: [
+                { icon: '\u{1F30C}', value: 'Near zero', label: 'pressure' },
+                { icon: '\u{1F321}\u{FE0F}', value: 'Room temp', label: 'boiling point drops' },
+                { icon: '\u{1FAE7}', value: 'Everywhere', label: 'bubbles!' },
+            ],
+            comparison: 'Without air pressure, water boils at room temperature \u{2014} the whole liquid fills with bubbles. Even liquids in spacesuits could start bubbling!'
+        }
+    },
+    {
+        id: 'ships',
+        wave: 2,
+        bubbleText: 'Can a bubble sink a ship?',
+        answerType: 'icon-grid',
+        answer: {
+            title: 'Bubbles vs. Ships',
+            items: [
+                { icon: '\u{1F6A2}', label: 'Propeller bubbles eat through metal over time' },
+                { icon: '\u{1F93F}', label: 'Noisy bubbles reveal hidden submarines' },
+                { icon: '\u{2693}', label: 'Seabed gas bubbles can make ships lose buoyancy' },
+                { icon: '\u{1F527}', label: 'Navies spend millions fighting cavitation damage' },
+            ],
+            learnMore: [
+                { label: 'Cavitation explained', url: 'https://en.wikipedia.org/wiki/Cavitation', type: 'article' }
+            ]
+        }
+    },
+    {
+        id: 'doctors',
+        wave: 2,
+        bubbleText: 'How do doctors use bubbles?',
+        answerType: 'icon-grid',
+        answer: {
+            title: 'Bubbles in Medicine',
+            items: [
+                { icon: '\u{1FAB7}', label: 'Smash kidney stones without surgery' },
+                { icon: '\u{1F489}', label: 'Deliver medicine to exact spots in the body' },
+                { icon: '\u{1F50D}', label: 'Tiny bubbles help ultrasound scans see inside you' },
+                { icon: '\u{1F9AB}', label: 'Kill bacteria on surgical tools' },
+            ],
+            learnMore: [
+                { label: 'How kidney stone treatment works', url: 'https://en.wikipedia.org/wiki/Lithotripsy', type: 'article' }
+            ]
+        }
+    },
+    {
+        id: 'size',
+        wave: 2,
+        bubbleText: 'How small is a cavitation bubble?',
+        answerType: 'bar-chart',
+        answer: {
+            title: 'Incredibly Tiny!',
+            bars: [
+                { label: 'Grain of sand', value: 500,  display: '0.5 mm',   icon: '\u{1F3D6}\u{FE0F}', color: '#e9c46a' },
+                { label: 'Bubble',        value: 100,  display: '~0.1 mm',  icon: '\u{1FAE7}', color: '#e63946' },
+                { label: 'Human hair',    value: 70,   display: '0.07 mm',  icon: '\u{1F9D1}', color: '#4aba8a' },
+                { label: 'Red blood cell', value: 7,   display: '0.007 mm', icon: '\u{1FA78}', color: '#c03030' },
+            ],
+            funFact: 'Most cavitation bubbles are smaller than a grain of sand \u{2014} yet they can destroy solid steel!'
+        }
+    },
+    {
+        id: 'torpedo',
+        wave: 2,
+        bubbleText: 'Can bubbles make you go faster?',
+        answerType: 'bar-chart',
+        answer: {
+            title: 'Supercavitation Speed!',
+            bars: [
+                { label: 'Normal torpedo', value: 80,  display: '80 km/h',  icon: '\u{1F4A3}', color: '#2a9d8f' },
+                { label: 'Speedboat',      value: 130, display: '130 km/h', icon: '\u{1F6E5}\u{FE0F}', color: '#4aba8a' },
+                { label: 'Super torpedo',  value: 370, display: '370 km/h', icon: '\u{1F680}', color: '#e63946' },
+            ],
+            funFact: 'Some torpedoes wrap themselves in a giant air bubble to travel almost 5 times faster underwater!',
+            learnMore: [
+                { label: 'How supercavitation works', url: 'https://en.wikipedia.org/wiki/Supercavitation', type: 'article' }
+            ]
+        }
     }
 ];
