@@ -800,10 +800,12 @@
     // Displacement filter for underwater waviness
     var dispSprite = new PIXI.Sprite(PIXI.Texture.from(dispCanvas));
     dispSprite.texture.baseTexture.wrapMode = PIXI.WRAP_MODES.REPEAT;
+    dispSprite.visible = false;
     pixiApp.stage.addChild(dispSprite);
-    var dispFilter = new PIXI.DisplacementFilter(dispSprite);
-    dispFilter.scale.set(3, 2); // reduced from (8,6) — less distortion, crisper SVG sprites
-    pixiApp.stage.filters = [dispFilter];
+    // Displacement filter removed — rasterizes entire stage, makes SVG sprites grainy
+    // var dispFilter = new PIXI.DisplacementFilter(dispSprite);
+    // dispFilter.scale.set(3, 2);
+    // pixiApp.stage.filters = [dispFilter];
 
     // =========================================================================
     // App state
