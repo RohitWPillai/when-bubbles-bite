@@ -518,3 +518,176 @@ html, body {
     0%, 100% { opacity: 0.8; }
     50% { opacity: 1; border-color: rgba(127, 219, 218, 0.7); }
 }
+
+/* Exit survey overlay */
+#exit-survey {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 160;
+    background: rgba(9, 31, 54, 0.92);
+    transition: opacity 0.4s ease;
+}
+
+#exit-survey.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#survey-content {
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    color: #fff;
+    font-family: sans-serif;
+    padding: 1.5rem;
+}
+
+#survey-content h2 {
+    font-family: 'Georgia', serif;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    color: #7fdbda;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 20px rgba(127, 219, 218, 0.4);
+}
+
+.survey-q {
+    font-size: clamp(1rem, 2.8vw, 1.4rem);
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 0.8rem;
+    margin-top: 1.5rem;
+}
+
+.survey-options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.survey-options button {
+    min-height: 60px;
+    padding: 0.7rem 1.3rem;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-family: sans-serif;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(127, 219, 218, 0.3);
+    border-radius: 1rem;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.survey-options button:active {
+    transform: scale(0.96);
+}
+
+.survey-options button.selected {
+    background: rgba(127, 219, 218, 0.25);
+    border-color: #7fdbda;
+    color: #7fdbda;
+}
+
+#survey-done {
+    display: block;
+    margin: 2rem auto 0;
+    min-height: 60px;
+    padding: 0.8rem 2.5rem;
+    font-size: clamp(1.1rem, 3vw, 1.4rem);
+    font-family: sans-serif;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(127, 219, 218, 0.3);
+    border: 2px solid rgba(127, 219, 218, 0.6);
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#survey-done:active {
+    background: rgba(127, 219, 218, 0.5);
+}
+
+/* Data export overlay */
+#data-export {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 250;
+    background: rgba(9, 31, 54, 0.95);
+    transition: opacity 0.3s ease;
+}
+
+#data-export.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#export-content {
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    color: #fff;
+    font-family: sans-serif;
+    padding: 2rem;
+}
+
+#export-content h2 {
+    font-size: 1.6rem;
+    color: #7fdbda;
+    margin-bottom: 1rem;
+}
+
+#export-stats {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+#export-copy-btn,
+#export-clear-btn,
+#export-close-btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.8rem;
+    padding: 0.7rem 1.5rem;
+    min-height: 48px;
+    font-size: 1rem;
+    font-family: sans-serif;
+    font-weight: 600;
+    color: #fff;
+    border: 2px solid rgba(127, 219, 218, 0.4);
+    border-radius: 1.5rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s ease;
+}
+
+#export-copy-btn {
+    background: rgba(127, 219, 218, 0.25);
+}
+
+#export-clear-btn {
+    background: rgba(230, 57, 70, 0.25);
+    border-color: rgba(230, 57, 70, 0.5);
+}
+
+#export-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
