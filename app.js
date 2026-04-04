@@ -549,19 +549,19 @@
     // --- New seafloor decorations & creatures ---
     var rockGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(rockGraphics);
-    rockGraphics.filters = [makeDepthFilter()];
+    // rockGraphics.filters = [makeDepthFilter()];
 
     var shellGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(shellGraphics);
-    shellGraphics.filters = [makeDepthFilter()];
+    // shellGraphics.filters = [makeDepthFilter()];
 
     var seaGrassGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(seaGrassGraphics);
-    seaGrassGraphics.filters = [makeDepthFilter()];
+    // seaGrassGraphics.filters = [makeDepthFilter()];
 
     var spongeGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(spongeGraphics);
-    spongeGraphics.filters = [makeDepthFilter()];
+    // spongeGraphics.filters = [makeDepthFilter()];
 
     var seaUrchinContainer = new PIXI.Container();
     pixiApp.stage.addChild(seaUrchinContainer);
@@ -575,11 +575,11 @@
 
     var hermitCrabGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(hermitCrabGraphics);
-    hermitCrabGraphics.filters = [makeDepthFilter()];
+    // hermitCrabGraphics.filters = [makeDepthFilter()];
 
     var seaCucumberGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(seaCucumberGraphics);
-    seaCucumberGraphics.filters = [makeDepthFilter()];
+    // seaCucumberGraphics.filters = [makeDepthFilter()];
 
     var seahorseContainer = new PIXI.Container();
     pixiApp.stage.addChild(seahorseContainer);
@@ -605,7 +605,7 @@
 
     var morayEelGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(morayEelGraphics);
-    morayEelGraphics.filters = [makeDepthFilter()];
+    // morayEelGraphics.filters = [makeDepthFilter()];
 
     var electricEelGraphics = new PIXI.Graphics();
     pixiApp.stage.addChild(electricEelGraphics);
