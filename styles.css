@@ -736,6 +736,8 @@ html, body {
     display: block;
     margin: 0 auto 1.5rem;
     border-radius: 0.8rem;
+    background: white;
+    padding: 0.8rem;
 }
 
 #qr-dismiss {
