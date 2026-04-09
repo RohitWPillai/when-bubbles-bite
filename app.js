@@ -6460,8 +6460,9 @@
     });
 
     // Prevent taps on the survey background from falling through
+    // Do NOT preventDefault — it blocks touch scrolling on iOS
     exitSurveyEl.addEventListener('pointerdown', function (e) {
-        e.stopPropagation(); e.preventDefault();
+        e.stopPropagation();
         lastInteraction = Date.now();
     });
 
