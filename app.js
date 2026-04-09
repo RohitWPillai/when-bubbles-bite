@@ -4539,7 +4539,8 @@
             sp.anchor.set(0.5, 0.51);
             var baseScale = 0.3 + Math.random() * 0.2;
             sp.scale.set(baseScale);
-            var xPos = W * (0.05 + Math.random() * 0.9);
+            var slotWidth = 0.8 / SEA_URCHIN_COUNT;
+            var xPos = W * (0.1 + i * slotWidth + Math.random() * slotWidth);
             var yPos = seafloorY(xPos) - 2;
             sp.position.set(xPos, yPos);
             seaUrchinContainer.addChild(sp);
@@ -5309,7 +5310,8 @@
         }
         cleanerShrimps = [];
         for (var i = 0; i < CLEANER_SHRIMP_COUNT; i++) {
-            var cx = W * (0.15 + Math.random() * 0.7);
+            var csSlotWidth = 0.6 / CLEANER_SHRIMP_COUNT;
+            var cx = W * (0.2 + i * csSlotWidth + Math.random() * csSlotWidth);
             var cy = H * (0.44 + Math.random() * 0.10);
             var sp = new PIXI.Sprite(creatureTextures.cleanerShrimp);
             sp.anchor.set(0.5, 0.5);
