@@ -695,6 +695,71 @@ html, body {
     color: rgba(255, 255, 255, 0.8);
 }
 
+/* QR prompt overlay */
+#qr-prompt {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 165;
+    background: rgba(9, 31, 54, 0.92);
+    transition: opacity 0.4s ease;
+}
+
+#qr-prompt.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#qr-prompt-content {
+    max-width: 360px;
+    width: 90%;
+    text-align: center;
+    color: #fff;
+    font-family: sans-serif;
+    padding: 2rem;
+}
+
+#qr-prompt-content p {
+    font-family: 'Georgia', serif;
+    font-size: clamp(1.3rem, 4vw, 1.8rem);
+    color: #7fdbda;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 20px rgba(127, 219, 218, 0.4);
+}
+
+#qr-msform {
+    display: block;
+    margin: 0 auto 1.5rem;
+    border-radius: 0.8rem;
+}
+
+#qr-dismiss {
+    display: block;
+    margin: 0 auto;
+    min-height: 48px;
+    padding: 0.6rem 2rem;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    font-family: sans-serif;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    background: transparent;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#qr-dismiss:active {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+}
+
 /* Data export overlay */
 #data-export {
     position: fixed;
