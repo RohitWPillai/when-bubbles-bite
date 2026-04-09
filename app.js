@@ -6388,11 +6388,13 @@
     var exitSurveyEl = document.getElementById('exit-survey');
     var surveyDoneBtn = document.getElementById('survey-done');
     var surveySkipBtn = document.getElementById('survey-skip');
-    var surveyResponses = { surprise: null, learned: null, age: null };
+    var surveyResponses = { prior: null, learned: null, surprise: null, intent: null, age: null };
 
     var surveyGroups = [
-        { el: document.getElementById('survey-surprise'), key: 'surprise' },
+        { el: document.getElementById('survey-prior'), key: 'prior' },
         { el: document.getElementById('survey-learned'), key: 'learned' },
+        { el: document.getElementById('survey-surprise'), key: 'surprise' },
+        { el: document.getElementById('survey-intent'), key: 'intent' },
         { el: document.getElementById('survey-age'), key: 'age' }
     ];
 
@@ -6442,21 +6444,37 @@
         idleWarningShown = false;
         if (idleWarningEl) idleWarningEl.classList.add('hidden');
         // Reset survey UI
-        surveyResponses = { surprise: null, learned: null, age: null };
+        surveyResponses = { prior: null, learned: null, surprise: null, intent: null, age: null };
         var allBtns = exitSurveyEl.querySelectorAll('.survey-options button');
         for (var i = 0; i < allBtns.length; i++) allBtns[i].classList.remove('selected');
         exitSurveyEl.classList.remove('hidden');
     }
 
+    var qrPromptEl = document.getElementById('qr-prompt');
+    var qrDismissBtn = document.getElementById('qr-dismiss');
+
+    qrDismissBtn.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        audioManager.playButton();
+        qrPromptEl.classList.add('hidden');
+        showSplash();
+    });
+
+    qrPromptEl.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); e.preventDefault();
+    });
+
     function dismissSurvey() {
         sessionLog.survey = {
-            surprise: surveyResponses.surprise,
+            prior: surveyResponses.prior,
             learned: surveyResponses.learned,
+            surprise: surveyResponses.surprise,
+            intent: surveyResponses.intent,
             age: surveyResponses.age
         };
         saveSession();
         exitSurveyEl.classList.add('hidden');
-        showSplash();
+        qrPromptEl.classList.remove('hidden');
     }
 
     // =========================================================================
