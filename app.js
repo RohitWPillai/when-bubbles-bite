@@ -3131,6 +3131,12 @@
                 this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 var data = this.noiseBuffer.getChannelData(0);
                 for (var i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+                // Play a silent buffer to unlock AudioContext on iOS Safari
+                var silentBuf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+                var silentSrc = this.ctx.createBufferSource();
+                silentSrc.buffer = silentBuf;
+                silentSrc.connect(this.ctx.destination);
+                silentSrc.start();
             } catch (e) { this.ctx = null; }
         },
 
@@ -3233,6 +3239,9 @@
         e.stopPropagation(); e.preventDefault();
         lastInteraction = Date.now();
         audioManager.muted = !audioManager.muted;
+        if (!audioManager.muted && audioManager.ctx && audioManager.ctx.state === 'suspended') {
+            audioManager.ctx.resume();
+        }
         muteIcon.textContent = audioManager.muted ? '\u{1F507}' : '\u{1F50A}';
     });
 
