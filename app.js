@@ -6358,7 +6358,7 @@
 
     var exitSurveyEl = document.getElementById('exit-survey');
     var surveyDoneBtn = document.getElementById('survey-done');
-    var surveyAutoTimer = null;
+    var surveySkipBtn = document.getElementById('survey-skip');
     var surveyResponses = { surprise: null, learned: null, age: null };
 
     var surveyGroups = [
@@ -6376,9 +6376,6 @@
                     btn.addEventListener('pointerdown', function (e) {
                         e.stopPropagation(); e.preventDefault();
                         lastInteraction = Date.now();
-                        // Reset auto-dismiss timer on any interaction
-                        if (surveyAutoTimer) { clearTimeout(surveyAutoTimer); }
-                        surveyAutoTimer = setTimeout(dismissSurvey, 15000);
                         // Deselect siblings, select this one
                         var siblings = group.el.querySelectorAll('button');
                         for (var k = 0; k < siblings.length; k++) siblings[k].classList.remove('selected');
@@ -6395,12 +6392,15 @@
         dismissSurvey();
     });
 
+    surveySkipBtn.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        dismissSurvey();
+    });
+
     // Prevent taps on the survey background from falling through
     exitSurveyEl.addEventListener('pointerdown', function (e) {
         e.stopPropagation(); e.preventDefault();
         lastInteraction = Date.now();
-        if (surveyAutoTimer) { clearTimeout(surveyAutoTimer); }
-        surveyAutoTimer = setTimeout(dismissSurvey, 15000);
     });
 
     function showExitSurvey() {
@@ -6413,13 +6413,9 @@
         var allBtns = exitSurveyEl.querySelectorAll('.survey-options button');
         for (var i = 0; i < allBtns.length; i++) allBtns[i].classList.remove('selected');
         exitSurveyEl.classList.remove('hidden');
-        // Auto-dismiss after 15 seconds if no interaction
-        if (surveyAutoTimer) clearTimeout(surveyAutoTimer);
-        surveyAutoTimer = setTimeout(dismissSurvey, 15000);
     }
 
     function dismissSurvey() {
-        if (surveyAutoTimer) { clearTimeout(surveyAutoTimer); surveyAutoTimer = null; }
         sessionLog.survey = {
             surprise: surveyResponses.surprise,
             learned: surveyResponses.learned,

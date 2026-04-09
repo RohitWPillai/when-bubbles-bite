@@ -617,6 +617,28 @@ html, body {
     background: rgba(127, 219, 218, 0.5);
 }
 
+#survey-skip {
+    display: block;
+    margin: 1rem auto 0;
+    min-height: 44px;
+    padding: 0.6rem 2rem;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    font-family: sans-serif;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    background: transparent;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#survey-skip:active {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+}
+
 /* Data export overlay */
 #data-export {
     position: fixed;
