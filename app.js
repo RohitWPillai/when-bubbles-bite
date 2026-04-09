@@ -3236,6 +3236,15 @@
         muteIcon.textContent = audioManager.muted ? '\u{1F507}' : '\u{1F50A}';
     });
 
+    var finishBtn = document.getElementById('finish-btn');
+    finishBtn.classList.add('hidden');
+    finishBtn.addEventListener('pointerdown', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        audioManager.playButton();
+        lastInteraction = Date.now();
+        showExitSurvey();
+    });
+
     // =========================================================================
     // Answer overlay (unchanged from Canvas 2D)
     // =========================================================================
@@ -3255,6 +3264,7 @@
         }
         if (!question) return;
         appState = State.ANSWER;
+        finishBtn.classList.add('hidden');
         lastInteraction = Date.now();
         answerViewStart = Date.now();
         lastAnsweredQuestionId = questionId;
@@ -3391,6 +3401,7 @@
     function hideAnswer() {
         overlayEl.classList.add('hidden');
         appState = State.BUBBLES;
+        finishBtn.classList.remove('hidden');
         lastInteraction = Date.now();
         if (answerViewStart && sessionLog.questions.length > 0) {
             var lastEntry = sessionLog.questions[sessionLog.questions.length - 1];
@@ -3499,6 +3510,7 @@
         audioManager.init();
         splashEl.classList.add('hidden');
         appState = State.BUBBLES;
+        finishBtn.classList.remove('hidden');
         lastInteraction = Date.now();
         sessionLog.startTime = Date.now();
         initQuestionBubbles();
@@ -6426,6 +6438,7 @@
     function showExitSurvey() {
         appState = State.SURVEY;
         overlayEl.classList.add('hidden');
+        finishBtn.classList.add('hidden');
         idleWarningShown = false;
         if (idleWarningEl) idleWarningEl.classList.add('hidden');
         // Reset survey UI

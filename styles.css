@@ -309,6 +309,36 @@ html, body {
     background: rgba(127, 219, 218, 0.4);
 }
 
+/* Feedback button */
+#finish-btn {
+    position: fixed;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    left: calc(1rem + env(safe-area-inset-left, 0px));
+    z-index: 200;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s ease, opacity 0.3s ease;
+}
+
+#finish-btn:active {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+#finish-btn.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* Mute button */
 #mute-btn {
     position: fixed;
