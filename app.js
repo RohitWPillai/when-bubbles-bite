@@ -3519,11 +3519,21 @@
         }
     }
 
-    // Unlock audio on first touch — iOS requires touchstart specifically
-    document.addEventListener('touchstart', function () {
+    // Unlock audio on touch — iOS WebKit requires touchstart/touchend
+    var audioUnlocked = false;
+    function tryUnlockAudio() {
         audioManager.init();
         audioManager.unlock();
-    }, { once: true });
+        if (audioManager.ctx && audioManager.ctx.state === 'running') {
+            audioUnlocked = true;
+            document.removeEventListener('touchstart', tryUnlockAudio, true);
+            document.removeEventListener('touchend', tryUnlockAudio, true);
+            document.removeEventListener('click', tryUnlockAudio, true);
+        }
+    }
+    document.addEventListener('touchstart', tryUnlockAudio, true);
+    document.addEventListener('touchend', tryUnlockAudio, true);
+    document.addEventListener('click', tryUnlockAudio, true);
 
     function hideSplash() {
         audioManager.init();
