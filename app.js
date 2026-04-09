@@ -3136,12 +3136,17 @@
         // Must be called from a touch/click handler to unlock iOS audio
         unlock: function () {
             if (!this.ctx) return;
-            if (this.ctx.state === 'suspended') this.ctx.resume();
-            var silentBuf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
-            var src = this.ctx.createBufferSource();
-            src.buffer = silentBuf;
-            src.connect(this.ctx.destination);
-            src.start();
+            var self = this;
+            if (this.ctx.state === 'suspended') {
+                this.ctx.resume().then(function () {
+                    // Play silent buffer after resume completes
+                    var buf = self.ctx.createBuffer(1, 1, self.ctx.sampleRate);
+                    var src = self.ctx.createBufferSource();
+                    src.buffer = buf;
+                    src.connect(self.ctx.destination);
+                    src.start();
+                });
+            }
         },
 
         playCreature: function () {
