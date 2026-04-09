@@ -3120,7 +3120,6 @@
             if (!AC) return;
             try {
                 this.ctx = new AC();
-                if (this.ctx.state === 'suspended') this.ctx.resume();
                 this.masterFilter = this.ctx.createBiquadFilter();
                 this.masterFilter.type = 'lowpass';
                 this.masterFilter.frequency.value = 2000;
@@ -3131,17 +3130,23 @@
                 this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 var data = this.noiseBuffer.getChannelData(0);
                 for (var i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
-                // Play a silent buffer to unlock AudioContext on iOS Safari
-                var silentBuf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
-                var silentSrc = this.ctx.createBufferSource();
-                silentSrc.buffer = silentBuf;
-                silentSrc.connect(this.ctx.destination);
-                silentSrc.start();
             } catch (e) { this.ctx = null; }
+        },
+
+        // Must be called from a touch/click handler to unlock iOS audio
+        unlock: function () {
+            if (!this.ctx) return;
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+            var silentBuf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+            var src = this.ctx.createBufferSource();
+            src.buffer = silentBuf;
+            src.connect(this.ctx.destination);
+            src.start();
         },
 
         playCreature: function () {
             if (this.muted || !this.ctx) return;
+            if (this.ctx.state === 'suspended') this.ctx.resume();
             var actx = this.ctx;
             var dest = this.masterOut;
             var now = actx.currentTime;
@@ -3188,6 +3193,7 @@
 
         playChime: function () {
             if (this.muted || !this.ctx) return;
+            if (this.ctx.state === 'suspended') this.ctx.resume();
             var actx = this.ctx;
             var dest = this.masterOut;
             var now = actx.currentTime;
@@ -3239,9 +3245,7 @@
         e.stopPropagation(); e.preventDefault();
         lastInteraction = Date.now();
         audioManager.muted = !audioManager.muted;
-        if (!audioManager.muted && audioManager.ctx && audioManager.ctx.state === 'suspended') {
-            audioManager.ctx.resume();
-        }
+        audioManager.unlock();
         muteIcon.textContent = audioManager.muted ? '\u{1F507}' : '\u{1F50A}';
     });
 
@@ -3515,8 +3519,15 @@
         }
     }
 
+    // Unlock audio on first touch — iOS requires touchstart specifically
+    document.addEventListener('touchstart', function () {
+        audioManager.init();
+        audioManager.unlock();
+    }, { once: true });
+
     function hideSplash() {
         audioManager.init();
+        audioManager.unlock();
         splashEl.classList.add('hidden');
         appState = State.BUBBLES;
         finishBtn.classList.remove('hidden');
