@@ -86,8 +86,11 @@ window.QUESTIONS = [
             items: [
                 { icon: '\u{1F6A2}', label: 'Ship propellers' },
                 { icon: '\u{1F990}', label: 'Pistol shrimp claws' },
-                { icon: '\u{1F6B0}', label: 'Pumps and pipes' },
+                { icon: '\u{1F44A}', label: 'Even cracking your knuckles!' },
                 { icon: '\u{1F3E0}', label: 'Your kitchen blender!' },
+            ],
+            learnMore: [
+                { label: 'See a propeller shred water', url: 'https://www.youtube.com/watch?v=IKwQX31Mans', type: 'video' }
             ]
         }
     },
@@ -128,7 +131,10 @@ window.QUESTIONS = [
                 { icon: '\u{1F321}\u{FE0F}', value: 'Room temp', label: 'boiling point drops' },
                 { icon: '\u{1FAE7}', value: 'Everywhere', label: 'bubbles!' },
             ],
-            comparison: 'Without air pressure, water boils at room temperature \u{2014} the whole liquid fills with bubbles. Even liquids in spacesuits could start bubbling!'
+            comparison: 'Without air pressure, water boils at room temperature \u{2014} the whole liquid fills with bubbles. Even liquids in spacesuits could start bubbling!',
+            learnMore: [
+                { label: 'Water goes wild in a vacuum', url: 'https://www.youtube.com/shorts/uHGE2i7Wd3s', type: 'video' }
+            ]
         }
     },
     {
@@ -160,7 +166,7 @@ window.QUESTIONS = [
                 { icon: '\u{1FAB7}', label: 'Smash kidney stones without surgery' },
                 { icon: '\u{1F489}', label: 'Deliver medicine to exact spots in the body' },
                 { icon: '\u{1F50D}', label: 'Tiny bubbles help ultrasound scans see inside you' },
-                { icon: '\u{1F9AB}', label: 'Kill bacteria on surgical tools' },
+                { icon: '\u{1F9A0}', label: 'Kill bacteria on surgical tools' },
             ],
             learnMore: [
                 { label: 'How kidney stone treatment works', url: 'https://en.wikipedia.org/wiki/Lithotripsy', type: 'article' }
@@ -180,7 +186,10 @@ window.QUESTIONS = [
                 { label: 'Human hair',    value: 70,   display: '0.07 mm',  icon: '\u{1F9D1}', color: '#4aba8a' },
                 { label: 'Red blood cell', value: 7,   display: '0.007 mm', icon: '\u{1FA78}', color: '#c03030' },
             ],
-            funFact: 'Most cavitation bubbles are smaller than a grain of sand \u{2014} yet they can destroy solid steel!'
+            funFact: 'Most cavitation bubbles are smaller than a grain of sand \u{2014} yet they can destroy solid steel!',
+            learnMore: [
+                { label: '82,000fps \u{2014} blink and miss it', url: 'https://youtube.com/shorts/xM6zdim0yk4', type: 'video' }
+            ]
         }
     },
     {
@@ -198,6 +207,26 @@ window.QUESTIONS = [
             funFact: 'Some torpedoes wrap themselves in a giant air bubble to travel almost 5 times faster underwater!',
             learnMore: [
                 { label: 'How supercavitation works', url: 'https://en.wikipedia.org/wiki/Supercavitation', type: 'article' }
+            ]
+        }
+    },
+    {
+        id: 'knuckles',
+        wave: 2,
+        bubbleText: 'What happens when you crack your knuckles?',
+        answerType: 'big-reveal',
+        answer: {
+            label: 'That satisfying pop is actually...',
+            number: 'Cavitation!',
+            unit: '',
+            badges: [
+                { icon: '\u{1F9B4}', value: 'Synovial fluid', label: 'between joints' },
+                { icon: '\u{1FAE7}', value: 'Gas bubble', label: 'forms & pops' },
+                { icon: '\u{23F1}\u{FE0F}', value: '20 min', label: 'recharge time' },
+            ],
+            comparison: 'When you pull your finger, the pressure drops in the fluid between your joints \u{2014} same physics as a propeller, but inside your own body!',
+            learnMore: [
+                { label: 'Your knuckles under MRI', url: 'https://www.youtube.com/watch?v=n3IYmdy6d4Y', type: 'video' }
             ]
         }
     }
