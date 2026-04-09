@@ -16,7 +16,7 @@ window.QUESTIONS = [
             ],
             funFact: 'A collapsing bubble can reach the speed of sound in water — over 5,000 km/h!',
             learnMore: [
-                { label: 'Bubble collapse in slow motion', url: 'https://doi.org/10.1103/APS.DFD.2018.GFM.V0090', type: 'video' }
+                { label: 'Watch a bubble implode', url: 'https://doi.org/10.1103/APS.DFD.2018.GFM.V0090', type: 'video' }
             ]
         }
     },
@@ -38,7 +38,7 @@ window.QUESTIONS = [
             comparison: 'The balloon in our demo collapses the same way, but real cavitation bubbles get almost as hot as the Sun!',
             learnMore: [
                 { label: 'Watch a bubble glow', url: 'http://acoustics-research.physics.ucla.edu/wp-content/uploads/2015/02/bubble.mp4', type: 'video' },
-                { label: 'How bubbles make light', url: 'https://acoustics-research.physics.ucla.edu/sonoluminescence/', type: 'article' }
+                { label: 'Bubbles that make light', url: 'https://acoustics-research.physics.ucla.edu/sonoluminescence/', type: 'article' }
             ]
         }
     },
@@ -72,8 +72,8 @@ window.QUESTIONS = [
                 { icon: '\u{2699}\u{FE0F}', label: 'Better propellers' },
             ],
             learnMore: [
-                { label: 'Water purification', url: 'https://youtu.be/RcqCgge_Fxs', type: 'video' },
-                { label: 'Sonochemistry', url: 'https://en.wikipedia.org/wiki/Sonochemistry', type: 'article' }
+                { label: 'Bubbles that clean dirty water', url: 'https://youtu.be/RcqCgge_Fxs', type: 'video' },
+                { label: 'Chemistry powered by sound', url: 'https://en.wikipedia.org/wiki/Sonochemistry', type: 'article' }
             ]
         }
     },
@@ -109,8 +109,8 @@ window.QUESTIONS = [
             ],
             comparison: 'Snaps its claw so fast it creates a cavitation bubble, a shock wave, and a flash of light!',
             learnMore: [
-                { label: 'Pistol shrimp in slow motion', url: 'https://youtube.com/shorts/xm4-XGH95fs', type: 'video' },
-                { label: 'The full story', url: 'https://youtu.be/eXR--I99S60', type: 'video' }
+                { label: 'The fastest punch in the ocean', url: 'https://youtube.com/shorts/xm4-XGH95fs', type: 'video' },
+                { label: 'The ocean\'s loudest assassin', url: 'https://youtu.be/eXR--I99S60', type: 'video' }
             ]
         }
     },
@@ -151,7 +151,7 @@ window.QUESTIONS = [
                 { icon: '\u{1F527}', label: 'Navies spend millions fighting cavitation damage' },
             ],
             learnMore: [
-                { label: 'Cavitation explained', url: 'https://en.wikipedia.org/wiki/Cavitation', type: 'article' }
+                { label: 'Why bubbles sink ships', url: 'https://en.wikipedia.org/wiki/Cavitation', type: 'article' }
             ]
         }
     },
@@ -169,7 +169,7 @@ window.QUESTIONS = [
                 { icon: '\u{1F9A0}', label: 'Kill bacteria on surgical tools' },
             ],
             learnMore: [
-                { label: 'How kidney stone treatment works', url: 'https://en.wikipedia.org/wiki/Lithotripsy', type: 'article' }
+                { label: 'Smashing stones with sound', url: 'https://en.wikipedia.org/wiki/Lithotripsy', type: 'article' }
             ]
         }
     },
@@ -206,7 +206,7 @@ window.QUESTIONS = [
             ],
             funFact: 'Some torpedoes wrap themselves in a giant air bubble to travel almost 5 times faster underwater!',
             learnMore: [
-                { label: 'How supercavitation works', url: 'https://en.wikipedia.org/wiki/Supercavitation', type: 'article' }
+                { label: 'The bubble-powered torpedo', url: 'https://en.wikipedia.org/wiki/Supercavitation', type: 'article' }
             ]
         }
     },

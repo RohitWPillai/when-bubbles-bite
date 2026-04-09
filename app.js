@@ -1168,7 +1168,7 @@
 
     function initJellyfish() {
         jellyfish.x = W * (0.3 + Math.random() * 0.4);
-        jellyfish.y = H * (0.15 + Math.random() * 0.25);
+        jellyfish.y = H * (0.10 + Math.random() * 0.12);
         jellyfish.lissAmpX = W * 0.15;
         jellyfish.lissAmpY = H * 0.1;
         jellyfish.lissA = 0.03 + Math.random() * 0.02;
@@ -2161,7 +2161,7 @@
         whale.triggered = true;
         whale.active = true;
         whale.startTime = animTime;
-        whale.y = H * (0.3 + Math.random() * 0.2);
+        whale.y = H * (0.22 + Math.random() * 0.12);
         whale.direction = Math.random() > 0.5 ? 1 : -1;
     }
 
@@ -3612,6 +3612,7 @@
             if (sfDist < sf.radius * 2.5) {
                 sf.curlTimer = 1.5;
                 spawnBioluminescence(sf.x, sf.y);
+                audioManager.playCreature();
             }
         }
 
@@ -3621,6 +3622,7 @@
             var anDist = Math.sqrt(Math.pow(px - an.x, 2) + Math.pow(py - (an.y - an.baseHeight), 2));
             if (anDist < 40) {
                 an.retractTimer = 2.3; // 0.3s retract + 2s extend
+                audioManager.playCreature();
                 // Also hide clownfish if near anemone 0
                 if (_ai === 0) {
                     for (var _cfi = 0; _cfi < clownfish.length; _cfi++) {
@@ -3639,6 +3641,7 @@
                 cr.stateTimer = 1.5;
                 cr.dir = px > cr.x ? -1 : 1;
                 cr.startleSpeed = cr.speed * 3;
+                audioManager.playCreature();
             }
         }
 
@@ -3648,6 +3651,7 @@
             var coDist = Math.sqrt(Math.pow(px - co.x, 2) + Math.pow(py - (co.y - co.height * 0.5), 2));
             if (coDist < co.width + 20) {
                 co.tapTimer = 1;
+                audioManager.playCreature();
             }
         }
 
@@ -3658,6 +3662,7 @@
                 manta.rollTimer = 2;
                 manta.rollAngle = 0;
                 spawnBioluminescence(manta.x, manta.y);
+                audioManager.playCreature();
             }
         }
 
@@ -3666,6 +3671,7 @@
         var pfDist = Math.sqrt(Math.pow(px - pufferfish.x, 2) + Math.pow(py - pfY, 2));
         if (pfDist < pufferfish.size * 2) {
             inflatePufferfish();
+            audioManager.playCreature();
         }
 
         // --- New creatures tap interactions ---
@@ -4808,7 +4814,7 @@
 
     function initOctopus() {
         octopus.x = W * (0.2 + Math.random() * 0.6);
-        octopus.y = H * 0.75 + Math.random() * (H * 0.15);
+        octopus.y = H * (0.74 + Math.random() * 0.10);
         octopus.targetX = octopus.x;
         octopus.targetY = octopus.y;
         octopus.tentacles = [];
@@ -5113,7 +5119,7 @@
     function initElectricEel() {
         electricEel.dir = Math.random() > 0.5 ? 1 : -1;
         electricEel.x = electricEel.dir > 0 ? -100 : W + 100;
-        electricEel.y = H * (0.5 + Math.random() * 0.25);
+        electricEel.y = H * (0.54 + Math.random() * 0.10);
         electricEel.zapTimer = 0;
         electricEel.zapBranches = [];
     }
@@ -5177,8 +5183,8 @@
         ee.x += ee.speed * ee.dir * dt;
         ee.pulsePhase += dtSec;
         // Reverse at edges
-        if (ee.dir > 0 && ee.x > W + 120) { ee.dir = -1; ee.y = H * (0.5 + Math.random() * 0.25); }
-        if (ee.dir < 0 && ee.x < -120) { ee.dir = 1; ee.y = H * (0.5 + Math.random() * 0.25); }
+        if (ee.dir > 0 && ee.x > W + 120) { ee.dir = -1; ee.y = H * (0.54 + Math.random() * 0.10); }
+        if (ee.dir < 0 && ee.x < -120) { ee.dir = 1; ee.y = H * (0.54 + Math.random() * 0.10); }
         // Zap countdown
         if (ee.zapTimer > 0) {
             ee.zapTimer -= dtSec;
@@ -5304,7 +5310,7 @@
         cleanerShrimps = [];
         for (var i = 0; i < CLEANER_SHRIMP_COUNT; i++) {
             var cx = W * (0.15 + Math.random() * 0.7);
-            var cy = H - 20 - Math.random() * 30;
+            var cy = H * (0.44 + Math.random() * 0.10);
             var sp = new PIXI.Sprite(creatureTextures.cleanerShrimp);
             sp.anchor.set(0.5, 0.5);
             var baseScale = 0.6 + Math.random() * 0.2;
@@ -5397,7 +5403,7 @@
     function initLionfish() {
         lionfish.dir = Math.random() > 0.5 ? 1 : -1;
         lionfish.x = lionfish.dir > 0 ? -60 : W + 60;
-        lionfish.y = H * (0.30 + Math.random() * 0.20);
+        lionfish.y = H * (0.34 + Math.random() * 0.10);
         lionfish.displayTimer = 0;
         lionfish.finSpread = 1;
         if (!lionfish.sprite) {
@@ -5462,7 +5468,7 @@
             var baseScale = 0.25 + Math.random() * 0.15;
             sp.scale.set(baseScale);
             var xPos = W * (0.1 + Math.random() * 0.8);
-            var yPos = seafloorY(xPos) - 10 - Math.random() * 30;
+            var yPos = H * (0.64 + Math.random() * 0.10);
             sp.position.set(xPos, yPos);
             nudibranchContainer.addChildAt(sp, nudibranchContainer.children.length - 1);
             nudibranchs.push({
