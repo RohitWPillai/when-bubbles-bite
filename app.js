@@ -3134,31 +3134,50 @@
             } catch (e) { this.ctx = null; }
         },
 
-        droneGain: null,
-        droneStarted: false,
-
-        startDrone: function () {
-            if (this.droneStarted || !this.ctx) return;
-            this.droneStarted = true;
+        playCreature: function () {
+            if (this.muted || !this.ctx) return;
             var actx = this.ctx;
             var dest = this.masterOut;
-            this.droneGain = actx.createGain();
-            this.droneGain.gain.value = 0;
-            this.droneGain.connect(dest);
-            var osc1 = actx.createOscillator();
-            osc1.type = 'triangle'; osc1.frequency.value = 50;
-            osc1.connect(this.droneGain); osc1.start();
+            var now = actx.currentTime;
+            // Watery "bloop" — sine sweep up with soft attack
+            var osc = actx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200 + Math.random() * 80, now);
+            osc.frequency.exponentialRampToValueAtTime(500 + Math.random() * 200, now + 0.1);
+            var g = actx.createGain();
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(0.2, now + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            osc.connect(g); g.connect(dest);
+            osc.start(now); osc.stop(now + 0.25);
+            // Second harmonic for richness
             var osc2 = actx.createOscillator();
-            osc2.type = 'triangle'; osc2.frequency.value = 55;
-            osc2.connect(this.droneGain); osc2.start();
-            this.droneGain.gain.setValueAtTime(0, actx.currentTime);
-            this.droneGain.gain.linearRampToValueAtTime(0.06, actx.currentTime + 2);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(340 + Math.random() * 60, now + 0.04);
+            osc2.frequency.exponentialRampToValueAtTime(700 + Math.random() * 100, now + 0.12);
+            var g2 = actx.createGain();
+            g2.gain.setValueAtTime(0, now + 0.04);
+            g2.gain.linearRampToValueAtTime(0.08, now + 0.06);
+            g2.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc2.connect(g2); g2.connect(dest);
+            osc2.start(now + 0.04); osc2.stop(now + 0.2);
         },
 
-        setDroneVolume: function (vol) {
-            if (!this.droneGain || !this.ctx) return;
-            this.droneGain.gain.setValueAtTime(this.droneGain.gain.value, this.ctx.currentTime);
-            this.droneGain.gain.linearRampToValueAtTime(this.muted ? 0 : vol, this.ctx.currentTime + 0.3);
+        playButton: function () {
+            if (this.muted || !this.ctx || !this.noiseBuffer) return;
+            var actx = this.ctx;
+            var dest = this.masterOut;
+            var now = actx.currentTime;
+            // Soft click — short filtered noise burst
+            var noise = actx.createBufferSource();
+            noise.buffer = this.noiseBuffer;
+            var hp = actx.createBiquadFilter();
+            hp.type = 'highpass'; hp.frequency.value = 3000; hp.Q.value = 0.7;
+            var g = actx.createGain();
+            g.gain.setValueAtTime(0.12, now);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+            noise.connect(hp); hp.connect(g); g.connect(dest);
+            noise.start(now); noise.stop(now + 0.03);
         },
 
         playChime: function () {
@@ -3215,7 +3234,6 @@
         lastInteraction = Date.now();
         audioManager.muted = !audioManager.muted;
         muteIcon.textContent = audioManager.muted ? '\u{1F507}' : '\u{1F50A}';
-        audioManager.setDroneVolume(audioManager.muted ? 0 : 0.06);
     });
 
     // =========================================================================
@@ -3390,6 +3408,7 @@
 
     dismissBtn.addEventListener('pointerdown', function (e) {
         e.stopPropagation(); e.preventDefault();
+        audioManager.playButton();
         if (idleWarningShown) { idleWarningShown = false; if (idleWarningEl) idleWarningEl.classList.add('hidden'); }
         hideAnswer();
     });
@@ -3435,7 +3454,6 @@
 
     function showSplash() {
         appState = State.SPLASH;
-        audioManager.setDroneVolume(0);
         splashEl.classList.remove('hidden');
         overlayEl.classList.add('hidden');
         if (exitSurveyEl) exitSurveyEl.classList.add('hidden');
@@ -3479,7 +3497,6 @@
 
     function hideSplash() {
         audioManager.init();
-        audioManager.startDrone();
         splashEl.classList.add('hidden');
         appState = State.BUBBLES;
         lastInteraction = Date.now();
@@ -3649,7 +3666,7 @@
             if (Math.sqrt(suDx * suDx + suDy * suDy) < su.radius * 3) {
                 su.spineExtend = 1.0;
                 spawnRipple(px, py);
-                audioManager.playPop(true);
+                audioManager.playCreature();
                 break;
             }
         }
@@ -3663,7 +3680,7 @@
                 tw.retractTimer = 3;
                 tw.fanHeight = 0;
                 spawnRipple(px, py);
-                audioManager.playPop(true);
+                audioManager.playCreature();
                 break;
             }
         }
@@ -3677,7 +3694,7 @@
                 hci.hideTimer = 3;
                 hci.legEmergePhase = 0;
                 spawnRipple(px, py);
-                audioManager.playPop(true);
+                audioManager.playCreature();
                 break;
             }
         }
@@ -3691,7 +3708,7 @@
                 sc.contractTimer = 2;
                 sc.contractAmount = 1;
                 spawnRipple(px, py);
-                audioManager.playPop(true);
+                audioManager.playCreature();
                 break;
             }
         }
@@ -3702,7 +3719,7 @@
         if (Math.sqrt(ocDx * ocDx + ocDy * ocDy) < octopus.bodyRadius * 2) {
             triggerOctopusInk();
             spawnRipple(px, py);
-            audioManager.playPop(true);
+            audioManager.playCreature();
         }
 
         // Moray eel: lunge
@@ -3714,7 +3731,7 @@
                 mr.lungeTimer = 1.5;
                 mr.mouthOpen = 1;
                 spawnRipple(px, py);
-                audioManager.playPop(true);
+                audioManager.playCreature();
                 break;
             }
         }
@@ -3725,7 +3742,7 @@
         if (Math.sqrt(eeDx * eeDx + eeDy * eeDy) < 50) {
             triggerElectricZap();
             spawnRipple(px, py);
-            audioManager.playPop(true);
+            audioManager.playCreature();
         }
 
         // Seahorse babies: detach
@@ -3750,7 +3767,7 @@
                 shb.floatX = shX;
                 shb.floatY = shY;
                 spawnRipple(px, py);
-                audioManager.playPop(true);
+                audioManager.playCreature();
                 break;
             }
         }
@@ -3763,7 +3780,7 @@
             if (Math.sqrt(csDx * csDx + csDy * csDy) < csi.size * 2) {
                 csi.danceTimer = 1;
                 spawnRipple(px, py);
-                audioManager.playPop(true);
+                audioManager.playCreature();
                 break;
             }
         }
@@ -3775,7 +3792,7 @@
             lionfish.displayTimer = 2;
             lionfish.finSpread = 1.5;
             spawnRipple(px, py);
-            audioManager.playPop(true);
+            audioManager.playCreature();
         }
 
         // Nudibranch: curl + color puff
@@ -3797,7 +3814,7 @@
                     cp.size = 1.5 + Math.random() * 2;
                 }
                 spawnRipple(px, py);
-                audioManager.playPop(true);
+                audioManager.playCreature();
                 break;
             }
         }
@@ -6375,6 +6392,7 @@
                 (function (btn) {
                     btn.addEventListener('pointerdown', function (e) {
                         e.stopPropagation(); e.preventDefault();
+                        audioManager.playButton();
                         lastInteraction = Date.now();
                         // Deselect siblings, select this one
                         var siblings = group.el.querySelectorAll('button');
@@ -6389,11 +6407,13 @@
 
     surveyDoneBtn.addEventListener('pointerdown', function (e) {
         e.stopPropagation(); e.preventDefault();
+        audioManager.playButton();
         dismissSurvey();
     });
 
     surveySkipBtn.addEventListener('pointerdown', function (e) {
         e.stopPropagation(); e.preventDefault();
+        audioManager.playButton();
         dismissSurvey();
     });
 
@@ -6754,11 +6774,9 @@
     document.addEventListener('visibilitychange', function () {
         if (document.hidden) {
             pixiApp.ticker.stop();
-            audioManager.setDroneVolume(0);
         } else {
             pixiApp.ticker.start();
             lastInteraction = Date.now();
-            if (appState !== State.SPLASH) audioManager.setDroneVolume(0.06);
         }
     });
 

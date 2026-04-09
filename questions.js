@@ -53,6 +53,9 @@ window.QUESTIONS = [
                 { icon: '\u{1F4A8}', label: 'Tiny jets faster than a racing car' },
                 { icon: '\u{1F4B0}', label: 'Billions in repairs every year' },
                 { icon: '\u{1F388}', label: 'Same physics as our balloon demo, but tiny and by the millions!' },
+            ],
+            learnMore: [
+                { label: 'Can orange juice pop a balloon?', url: 'https://www.youtube.com/watch?v=M3K6aESmgxg', type: 'video' }
             ]
         }
     },
