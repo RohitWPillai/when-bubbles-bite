@@ -840,6 +840,18 @@
     }
 
     var sessionLog = createSessionLog();
+
+    // Web analytics (GoatCounter custom events). Anonymous counters only.
+    // No-op on the exhibit iPad (file:// never loads count.js), so the
+    // localStorage telemetry stays the only event-day record.
+    function track(path) {
+        try {
+            if (window.goatcounter && window.goatcounter.count) {
+                window.goatcounter.count({ path: path, event: true });
+            }
+        } catch (e) { /* analytics must never break the app */ }
+    }
+
     var answerViewStart = null;
     var lastAnsweredQuestionId = null;
     var unlockedCreatures = {};
@@ -2871,6 +2883,7 @@
         if (allWave1Answered && currentWave === 1) {
             currentWave = 2;
             sessionLog.wave2Reached = true;
+            track('wave-2-reached');
         }
     }
 
@@ -3292,6 +3305,7 @@
             answeredDuration: null,
             wave: question.wave || 1
         });
+        track('question/' + questionId);
         contentEl.innerHTML = '';
         switch (question.answerType) {
             case 'bar-chart': renderBarChart(question.answer); break;
@@ -3411,6 +3425,7 @@
                         url: linkEl.getAttribute('data-link-url'),
                         tappedAt: Date.now()
                     });
+                    track('learn-more/' + lastAnsweredQuestionId);
                 });
             })(linkEls[j]);
         }
@@ -3475,6 +3490,7 @@
             answerViewStart = null;
             allSessions.push(sessionLog);
             try { localStorage.setItem('bubblequiz-sessions', JSON.stringify(allSessions)); } catch (e) { /* storage full */ }
+            track('session-end');
         }
         var prevIdleResets = sessionLog.idleResets;
         sessionLog = createSessionLog();
@@ -3548,6 +3564,7 @@
         finishBtn.classList.remove('hidden');
         lastInteraction = Date.now();
         sessionLog.startTime = Date.now();
+        track('session-start');
         initQuestionBubbles();
         spawnAllCreatures();
     }
@@ -6465,6 +6482,7 @@
     surveyDoneBtn.addEventListener('pointerdown', function (e) {
         e.stopPropagation(); e.preventDefault();
         audioManager.playButton();
+        track('survey-submitted');
         dismissSurvey();
     });
 
